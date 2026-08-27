@@ -3,6 +3,7 @@
 import base64
 import hashlib
 import json
+import os
 
 import httpx
 import pytest
@@ -112,6 +113,10 @@ def test_body_only_is_plain():
 
 
 def test_message_id_uses_generic_domain():
+    # Forbidden hostnames stay outside the tree (env), so the guard does not
+    # publish the strings it is meant to block.
+    leak_host = os.environ.get("TEST_LEAK_HOST", "hosta")
+    leak_tailnet = os.environ.get("TEST_LEAK_TAILNET", "tailnetlabel")
     mime = build_mime(
         from_email="a@b.com",
         to=["c@d.com"],
@@ -119,8 +124,8 @@ def test_message_id_uses_generic_domain():
         body="x",
     )
     assert b"gmail-mcp.local" in mime
-    assert b"tail7838ad" not in mime
-    assert b"macmini" not in mime
+    assert leak_host.encode() not in mime
+    assert leak_tailnet.encode() not in mime
 
 
 @respx.mock
