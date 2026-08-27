@@ -68,4 +68,4 @@ fi
 
 echo ""
 echo "=== Done ==="
-echo "Commands: gmail-mcp, gmail-doctor (via $VENV_NAME)"
+echo "Commands: gmail-mcp, gmail-mcp-http, gmail-doctor (via $VENV_NAME)"

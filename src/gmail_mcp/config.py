@@ -14,13 +14,16 @@ class Settings(BaseSettings):
     environment: str = "local"
     log_level: str = "info"
 
-    # HTTP transport (Hand / GrokBot via gateway)
+    # HTTP transport (remote MCP clients via gateway)
     http_host: str = "127.0.0.1"
-    http_port: int = 8766
+    http_port: int = 8879
     http_bearer_token: str = ""
 
-    # Attachment outbox — only paths under this root are accepted
+    # Attachment outbox — only paths under this root are accepted for send
     outbox_root: Path = Path.home() / "Outbox"
+
+    # Download root — get_attachment may only write under this tree
+    download_root: Path = Path.home() / "Inbox"
 
     # OAuth token storage (populated after accounts.add)
     tokens_dir: Path = Path.home() / ".config" / "gmail-mcp" / "tokens"

@@ -19,6 +19,7 @@ dev = [
 
 [project.scripts]
 gmail-mcp = "gmail_mcp.server:main"
+gmail-mcp-http = "gmail_mcp.http_server:main"
 gmail-doctor = "gmail_mcp.doctor:main"
 
 [build-system]

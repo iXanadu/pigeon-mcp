@@ -1,6 +1,5 @@
 """Tests for OAuth account management."""
 
-import json
 import os
 import stat
 
@@ -9,11 +8,13 @@ import pytest
 import respx
 from unittest.mock import AsyncMock, patch
 
-from gmail_mcp.accounts import accounts_add_complete, accounts_list, accounts_remove
+from gmail_mcp.accounts import accounts_add, accounts_add_complete, accounts_list, accounts_remove
 from gmail_mcp.config import settings
 from gmail_mcp.google_oauth import build_auth_url, complete_oauth, refresh_access_token
 from gmail_mcp.oauth_constants import STATUS_ACTIVE, STATUS_NEEDS_AUTH
 from gmail_mcp.token_store import AccountToken, TokenStore
+
+GMAIL_PROFILE = "https://gmail.googleapis.com/gmail/v1/users/me/profile"
 
 
 @pytest.fixture
@@ -47,6 +48,15 @@ async def test_accounts_list_empty(token_store):
 
 
 @respx.mock
+async def test_accounts_list_needs_auth_without_refresh_token(token_store):
+    token_store.save(
+        AccountToken(email="ghost@example.com", refresh_token="", access_token="at")
+    )
+    rows = await accounts_list()
+    assert rows == [{"account": "ghost@example.com", "status": STATUS_NEEDS_AUTH}]
+
+
+@respx.mock
 async def test_complete_oauth_saves_account(token_store):
     respx.post("https://oauth2.googleapis.com/token").mock(
         return_value=httpx.Response(
@@ -59,8 +69,8 @@ async def test_complete_oauth_saves_account(token_store):
             },
         )
     )
-    respx.get("https://www.googleapis.com/oauth2/v2/userinfo").mock(
-        return_value=httpx.Response(200, json={"email": "bob@gmail.com"})
+    respx.get(GMAIL_PROFILE).mock(
+        return_value=httpx.Response(200, json={"emailAddress": "bob@gmail.com"})
     )
     token = await complete_oauth("code-1", settings.oauth_redirect_uri, token_store)
     assert token.email == "bob@gmail.com"
@@ -119,17 +129,27 @@ async def test_accounts_remove(token_store):
     assert token_store.load("eve@gmail.com") is None
 
 
-async def test_accounts_add_returns_auth_url(token_store, monkeypatch):
+@respx.mock
+async def test_accounts_add_awaits_callback_and_returns_email(token_store, monkeypatch):
     monkeypatch.setattr(
         "gmail_mcp.oauth_callback.run_callback_server",
-        AsyncMock(return_value=None),
+        AsyncMock(return_value="auth-code"),
     )
-    from gmail_mcp.accounts import accounts_add
-
+    respx.post("https://oauth2.googleapis.com/token").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "access_token": "access-3",
+                "refresh_token": "refresh-3",
+                "expires_in": 3600,
+            },
+        )
+    )
+    respx.get(GMAIL_PROFILE).mock(
+        return_value=httpx.Response(200, json={"emailAddress": "grace@gmail.com"})
+    )
     result = await accounts_add()
-    assert "auth_url" in result
-    assert "accounts.google.com" in result["auth_url"]
-    assert "test-client-id" in result["auth_url"]
+    assert result == {"account": "grace@gmail.com", "status": STATUS_ACTIVE}
 
 
 @respx.mock
@@ -146,8 +166,8 @@ async def test_accounts_add_complete(token_store):
             },
         )
     )
-    respx.get("https://www.googleapis.com/oauth2/v2/userinfo").mock(
-        return_value=httpx.Response(200, json={"email": "frank@gmail.com"})
+    respx.get(GMAIL_PROFILE).mock(
+        return_value=httpx.Response(200, json={"emailAddress": "frank@gmail.com"})
     )
     result = await accounts_add_complete("auth-code", state)
     assert result["account"] == "frank@gmail.com"

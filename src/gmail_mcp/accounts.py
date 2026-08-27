@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import asyncio
+import sys
 from dataclasses import dataclass
 
 from gmail_mcp.config import settings
@@ -13,10 +13,8 @@ from gmail_mcp.google_oauth import (
     revoke_and_remove,
     verify_state,
 )
-from gmail_mcp.oauth_constants import STATUS_ACTIVE
+from gmail_mcp.oauth_constants import STATUS_ACTIVE, STATUS_NEEDS_AUTH
 from gmail_mcp.token_store import TokenStore
-
-_pending_flows: dict[str, asyncio.Task] = {}
 
 
 @dataclass
@@ -46,33 +44,25 @@ async def accounts_list() -> list[dict[str, str]]:
 
 
 async def accounts_add() -> dict[str, str]:
-    """Start Google OAuth consent. Opens browser to add a Gmail account."""
+    """Start Google OAuth, wait for browser consent, return the Gmail address."""
+    from gmail_mcp.oauth_callback import run_callback_server
+
     redirect_uri = settings.oauth_redirect_uri
     auth_url, state = build_auth_url(redirect_uri)
+    print(f"Open this URL in a browser to connect Gmail:\n{auth_url}", file=sys.stderr)
 
-    async def _wait_for_callback() -> None:
-        from gmail_mcp.oauth_callback import run_callback_server
+    code = await run_callback_server(state, redirect_uri)
+    if not code:
+        raise TimeoutError(
+            "OAuth consent timed out. Open the URL printed above and complete consent."
+        )
 
-        code = await run_callback_server(state, redirect_uri)
-        if code:
-            await complete_oauth(code, redirect_uri, _store())
-
-    task = asyncio.create_task(_wait_for_callback())
-    _pending_flows[state] = task
-
-    def _cleanup(t: asyncio.Task) -> None:
-        _pending_flows.pop(state, None)
-
-    task.add_done_callback(_cleanup)
-
-    return {
-        "auth_url": auth_url,
-        "message": "Open auth_url in a browser. When consent completes, run accounts_list to verify.",
-    }
+    token = await complete_oauth(code, redirect_uri, _store())
+    return {"account": token.email, "status": token.status}
 
 
 async def accounts_add_complete(code: str, state: str) -> dict[str, str]:
-    """Complete OAuth when the redirect code is captured manually."""
+    """Complete OAuth when the redirect code is captured manually (tests/harness)."""
     if not verify_state(state):
         raise ValueError("Invalid or expired OAuth state")
     token = await complete_oauth(code, settings.oauth_redirect_uri, _store())

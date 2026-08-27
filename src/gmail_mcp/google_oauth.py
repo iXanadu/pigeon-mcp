@@ -11,11 +11,11 @@ import httpx
 
 from gmail_mcp.config import settings
 from gmail_mcp.oauth_constants import (
+    GMAIL_PROFILE_URL,
     GMAIL_SCOPES,
     GOOGLE_AUTH_URL,
     GOOGLE_REVOKE_URL,
     GOOGLE_TOKEN_URL,
-    GOOGLE_USERINFO_URL,
     STATUS_ACTIVE,
     STATUS_NEEDS_AUTH,
 )
@@ -84,14 +84,15 @@ async def exchange_code(code: str, redirect_uri: str) -> dict:
         return r.json()
 
 
-async def fetch_user_email(access_token: str) -> str:
+async def fetch_account_email(access_token: str) -> str:
+    """Resolve the consented Gmail address via users.getProfile (gmail.modify scope)."""
     async with httpx.AsyncClient(timeout=15.0) as client:
         r = await client.get(
-            GOOGLE_USERINFO_URL,
+            GMAIL_PROFILE_URL,
             headers={"Authorization": f"Bearer {access_token}"},
         )
         r.raise_for_status()
-        return r.json().get("email", "")
+        return r.json().get("emailAddress", "")
 
 
 async def refresh_access_token(store: TokenStore, email: str) -> AccountToken | None:
@@ -158,9 +159,9 @@ async def complete_oauth(code: str, redirect_uri: str, store: TokenStore) -> Acc
     if not refresh_token:
         raise RuntimeError("Google did not return a refresh_token — revoke app access and retry with prompt=consent")
 
-    email = await fetch_user_email(access_token)
+    email = await fetch_account_email(access_token)
     if not email:
-        raise RuntimeError("Could not determine Gmail address from Google userinfo")
+        raise RuntimeError("Could not determine Gmail address from users.getProfile")
 
     token = AccountToken(
         email=email,

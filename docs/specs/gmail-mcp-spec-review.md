@@ -51,32 +51,16 @@ stdio process. REQUIRED:
   get the same grant by default. Suggested start for Hand: read/organise +
   `draft_create`; open `send`/`trash` deliberately. Owner's own standing
   principle: rules written BEFORE the capability exists.
-- PROD HOST IS prod-host (`gmcp.c52.com`, Cloudflare-proxied), NOT the Mac —
-  learned from admin@prod-host 2026-08-26 8:48 pm EDT. Deploy follows prod-host's
-  standard runtime shape unchanged: uvicorn on a loopback port allocated by
-  `/var/www/ports.txt` (never self-claimed), nginx the only edge, systemd
-  `uvicorn_gmcp_prod`, pyenv `gmail-mcp-3.12`, `.env` + `.keys`,
-  `/var/www/gmcp.c52.com/prod`, Linux user `pigeon_user`. FastMCP's
-  Streamable HTTP transport is an ASGI app, so it serves under uvicorn like
-  every other prod-host site. Full record: gmail-mcp memory `deploy/prod-host-shape`.
-  admin@prod-host is HOLDING provisioning until this repo has a remote and the
-  HTTP side runs; ping them on inbox thread `inbox/1748e35a…` when ready.
-- The Mac runs only the stdio side for local harnesses (no daemon needed).
-- NO OAuth callback route on the vhost: Desktop-client consent runs once per
-  account on the owner's Mac (loopback redirect); token files are copied to
-  prod-host. Public surface = `/mcp` only.
-- SECRETS ON prod-host ARE 0640 app-user:group (ixanadu in the group), NOT the
-  spec's 0600: fleet-tools's vault-backup runs as ixanadu every 30 min and a
-  0600 file is silently skipped — the token would exist on exactly one
-  disk. This overrides the spec's line; the owner has been told why.
-- prod-host has no blob backup. Keep no mail cache (spec agrees). The one local
-  state file is the idempotency store; single copy accepted, loss = possible
-  duplicate send after a restore — say so in the runbook.
-- Edge: Cloudflare Browser Integrity Check 403s non-browser clients unless
-  the host has its own Configuration Rule (engram and fleet-registry have one;
-  share.c52.com lacked one and lost hours today). gmcp needs it before the
-  first request, plus a second edge factor (Cloudflare Access service token
-  or client cert) on top of the app bearer.
+- Production HTTP is loopback ASGI behind a reverse proxy (not the
+  operator's laptop). Public path is `/mcp` only. Desktop OAuth consent
+  runs on a local machine (loopback redirect); token files are copied to
+  the server. No OAuth callback on the public vhost.
+- Token files on a shared backup host may need group-readable mode (0640)
+  if a backup agent cannot read 0600. Prefer 0600 when backup can.
+- Idempotency store is local state; restoring without it can duplicate a
+  send. Do not cache mail.
+- Put a Cloudflare (or equivalent) rule so non-browser MCP clients are not
+  blocked by bot checks, plus an edge credential on top of the app bearer.
 
 ## 4. Duplicate sends
 The gateway path retries on timeout; a retried `send` is a second email to

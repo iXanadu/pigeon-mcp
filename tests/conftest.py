@@ -19,7 +19,7 @@ def _isolate_settings(monkeypatch, tmp_path):
     monkeypatch.setattr(config_mod.settings, "environment", "test")
     monkeypatch.setattr(config_mod.settings, "log_level", "info")
     monkeypatch.setattr(config_mod.settings, "http_host", "127.0.0.1")
-    monkeypatch.setattr(config_mod.settings, "http_port", 8766)
+    monkeypatch.setattr(config_mod.settings, "http_port", 8879)
     monkeypatch.setattr(config_mod.settings, "http_bearer_token", "test-token")
     monkeypatch.setattr(config_mod.settings, "outbox_root", tmp_path / "Outbox")
     monkeypatch.setattr(config_mod.settings, "tokens_dir", tmp_path / "tokens")

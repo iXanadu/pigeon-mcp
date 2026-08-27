@@ -1,8 +1,6 @@
-# Rename this to .python-version after creating your pyenv
-# Replace 'projectname' with your actual project name
+# Rename to .python-version after creating your pyenv virtualenv:
 #
-# Setup:
-#   pyenv virtualenv 3.13 projectname-3.13
-#   pyenv local projectname-3.13
+#   pyenv virtualenv 3.13 gmail-mcp-3.13
+#   pyenv local gmail-mcp-3.13
 #
-projectname-3.13
+gmail-mcp-3.13
