@@ -10,7 +10,7 @@ Do not wrap `https://gmailmcp.googleapis.com/mcp/v1`. That host is what chopped 
 
 Google does not let a normal Gmail login (user + password) hit the Gmail API. App passwords are IMAP-only, weaker, and still not "any account." Domain-wide service accounts only cover a Workspace you admin, not a personal `@gmail.com`.
 
-Use Google OAuth 2.0 with a refresh token (offline access). One Desktop OAuth client the operator owns. Each Gmail identity is a separate consent. Tokens live on the MCP host, mode 0600, never in chat, never in a tool argument.
+Use Google OAuth 2.0 with a refresh token (offline access). One Desktop OAuth client the operator owns. Each Gmail identity is a separate consent. Tokens live on the MCP host as files whose names contain `token` (mode 0640 so a group-readable backup can see them), never in chat, never in a tool argument.
 
 `accounts.add` starts the Google consent for whichever Google identity the human picks in the browser. The server records the email Google returns. That email is the account key forever.
 
