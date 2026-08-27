@@ -1,5 +1,9 @@
-# Secrets — NEVER commit this file. chmod 600 after copying.
-# Copy to .keys and fill in values.
+# Secrets — copy to .keys in the repo root. NEVER commit .keys.
+# chmod 600 .keys
 
-PROJECTNAME_DB_PASSWORD=
-PROJECTNAME_API_TOKEN=
+# Google Cloud → OAuth 2.0 → Desktop client
+GMAIL_MCP_GOOGLE_CLIENT_ID=
+GMAIL_MCP_GOOGLE_CLIENT_SECRET=
+
+# Streamable HTTP bearer (gateway / Hand presents this token)
+GMAIL_MCP_HTTP_BEARER_TOKEN=
