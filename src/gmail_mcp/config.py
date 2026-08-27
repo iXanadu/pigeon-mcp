@@ -37,8 +37,9 @@ class Settings(BaseSettings):
     # OAuth loopback callback (Desktop / stdio accounts_add)
     oauth_redirect_uri: str = "http://127.0.0.1:8767/oauth/callback"
 
-    # Public HTTPS callback for Hand-initiated consent (Web application client)
-    oauth_public_redirect_uri: str = "https://gmcp.c52.com/oauth/callback"
+    # Public HTTPS callback for Hand-initiated consent (Web application client).
+    # REQUIRED for accounts_auth_start — no fleet hostname default in public code.
+    oauth_public_redirect_uri: str = ""
 
     model_config = SettingsConfigDict(
         env_prefix="GMAIL_MCP_",

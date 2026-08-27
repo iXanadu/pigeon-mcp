@@ -63,7 +63,12 @@ async def accounts_add() -> dict[str, str]:
 
 async def accounts_auth_start() -> dict[str, str]:
     """Begin Hand-initiated OAuth. Returns auth_url; complete via public /oauth/callback."""
-    redirect_uri = settings.oauth_public_redirect_uri
+    redirect_uri = settings.oauth_public_redirect_uri.strip()
+    if not redirect_uri:
+        raise RuntimeError(
+            "GMAIL_MCP_OAUTH_PUBLIC_REDIRECT_URI is required for Hand-initiated OAuth "
+            "(set it to your public https://…/oauth/callback)"
+        )
     client_id, client_secret = web_client_credentials()
     auth_url, state = build_auth_url(
         redirect_uri,
