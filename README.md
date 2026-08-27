@@ -38,26 +38,75 @@ gmail-doctor
 
 Fill in `.keys` with your Google OAuth credentials and an HTTP bearer token before running the HTTP transport.
 
-### Google OAuth setup
+### Google Cloud Console (one-time)
 
-1. Create a project in [Google Cloud Console](https://console.cloud.google.com/).
-2. Enable the **Gmail API**.
-3. Configure the **OAuth consent screen** (External is fine for personal use).
-4. Create **OAuth client ID → Desktop app**.
-5. Add the redirect URI from `.env` (default `http://127.0.0.1:8767/oauth/callback`) to the client.
-6. Copy client id and secret into `.keys`.
+You need a **Desktop OAuth client** — not a service account, not domain-wide delegation.
 
-Scopes requested on consent: `gmail.modify`, `gmail.send`, `gmail.settings.basic` (live send-as signature only).
+| Step | Where | What |
+| --- | --- | --- |
+| 1 | APIs & Services → Library | Enable **Gmail API** |
+| 2 | OAuth consent screen | **External** is fine for personal use. Add your Google account as a **Test user** while the app is in Testing mode. |
+| 3 | Credentials → Create | **OAuth client ID → Desktop app** |
+| 4 | Client settings | Add redirect URI **`http://127.0.0.1:8767/oauth/callback`** (must match `GMAIL_MCP_OAUTH_REDIRECT_URI` in `.env`) |
+| 5 | `.keys` | Paste **Client ID** and **Client secret** as `GMAIL_MCP_GOOGLE_CLIENT_ID` / `GMAIL_MCP_GOOGLE_CLIENT_SECRET` |
 
-### Connect a mailbox
+On first `accounts_add`, Google asks for consent. Scopes are fixed in the server: read/send/organise mail plus read send-as signature (not cached).
 
-Run the stdio server and call `accounts_add` from your MCP client, or use a local harness. A browser opens for Google consent; the connected address becomes the account key for all other tools.
+**No** username/password, app password, or pasted refresh token in chat.
+
+### Connect a mailbox (`accounts_add`)
+
+`accounts_add` opens a **browser** for Google consent. It only runs on the **stdio** transport (`gmail-mcp`), not over HTTP.
 
 ```bash
 gmail-mcp   # stdio — required for accounts_add and accounts_remove
 ```
 
-Tokens are stored under `~/.config/gmail-mcp/tokens/` by default.
+Call `accounts_add` from your MCP client. When consent finishes, the server records the Gmail address Google returns; that address is the `account` key for every other tool.
+
+Tokens land in `~/.config/gmail-mcp/tokens/` (mode 0600). Copy that directory to any other host running the same server if needed.
+
+#### Headless server (no local browser)
+
+The OAuth callback is `http://127.0.0.1:8767/oauth/callback`. A machine with no display still needs a browser **somewhere** for the Google login page. Two common patterns:
+
+**A — SSH port forward (consent on your laptop)**
+
+On the headless host, start stdio MCP / `accounts_add`. From your laptop:
+
+```bash
+ssh -L 8767:127.0.0.1:8767 user@headless-host
+```
+
+Open the authorization URL the server prints (or trigger `accounts_add` through your MCP client with the tunnel up). The callback hits `127.0.0.1:8767` on the headless host via the tunnel.
+
+**B — Consent on a desktop, copy tokens**
+
+Run `accounts_add` once on a Mac or PC with a browser and the same `.env` / `.keys`. After consent, copy `~/.config/gmail-mcp/tokens/` to the production host (same paths, mode 0600). No re-consent unless Google revokes the refresh token.
+
+## Deployment layout
+
+Typical production split:
+
+```
+┌─────────────────────┐         ┌──────────────────────────┐
+│  Operator machine   │         │  MCP server (Linux/macOS) │
+│  (browser for OAuth)│         │  gmail-mcp-http           │
+│  accounts_add       │  copy   │  127.0.0.1:8879           │
+│  token files ───────┼────────►│  + .env / .keys           │
+└─────────────────────┘  tokens └───────────┬──────────────┘
+                                            │
+                              Cloudflare / gateway / TLS
+                                            │
+                                    Hand / remote MCP client
+```
+
+- **Do not** expose the operator's laptop to the public internet for MCP HTTP. HTTP binds **loopback** (`127.0.0.1:8879`) on the server; a reverse proxy terminates TLS and forwards to that port.
+- **OAuth** happens where a browser exists (operator machine or SSH tunnel). Token JSON files are copied to the server.
+- **Gateway** points at the **server** hostname you control (e.g. `mcp.example.com`), not the OAuth workstation.
+- Generate a long random `GMAIL_MCP_HTTP_BEARER_TOKEN`; the gateway presents it as `Authorization: Bearer …`.
+
+After deploy: `gmail-doctor`, `./scripts/start.sh` (macOS LaunchAgent) or your own systemd unit, then `accounts_list` over HTTP to confirm tokens.
 
 ## Configuration
 
@@ -111,7 +160,7 @@ Binds `127.0.0.1:8879` by default. Requires `Authorization: Bearer <GMAIL_MCP_HT
 
 Edit `launchd/com.gmail-mcp.plist` paths if your checkout or pyenv name differs. Logs go to `logs/`.
 
-Put a reverse proxy (e.g. Cloudflare + gateway) in front of the HTTP port for remote access — that wiring is deployment-specific.
+On Linux, run `gmail-mcp-http` under systemd with the same loopback bind — see **Deployment layout** above.
 
 ## Tools
 
