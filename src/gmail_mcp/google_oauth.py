@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import logging
 import secrets
 import string
 import urllib.parse
@@ -11,6 +12,8 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
 import httpx
+
+_log = logging.getLogger(__name__)
 
 from gmail_mcp.config import settings
 from gmail_mcp.oauth_constants import (
@@ -250,14 +253,34 @@ async def complete_oauth(
 
 
 async def revoke_and_remove(store: TokenStore, email: str) -> bool:
+    """Delete local token; best-effort revoke at Google (refresh preferred).
+
+    Local delete always proceeds. Google revoke failures are logged — callers must
+    not treat a True return as proof Google forgot the grant.
+    """
     token = store.load(email)
     if not token:
         return False
-    if token.access_token:
+
+    revoke_token = token.refresh_token or token.access_token
+    if revoke_token:
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
-                await client.post(GOOGLE_REVOKE_URL, params={"token": token.access_token})
+                resp = await client.post(
+                    GOOGLE_REVOKE_URL, params={"token": revoke_token}
+                )
+            # 200 = revoked; 400 often means already invalid/revoked — both OK.
+            if resp.status_code not in (200, 400):
+                _log.warning(
+                    "Google revoke for %s returned HTTP %s: %s",
+                    email,
+                    resp.status_code,
+                    (resp.text or "")[:200],
+                )
         except Exception:
-            pass
+            _log.exception("Google revoke request failed for %s", email)
+    else:
+        _log.warning("No token to revoke for %s; deleting local file only", email)
+
     store.delete(email)
     return True

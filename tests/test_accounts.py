@@ -152,12 +152,42 @@ async def test_accounts_remove(token_store):
     token_store.save(
         AccountToken(email="eve@gmail.com", refresh_token="rt", access_token="at")
     )
-    respx.post("https://oauth2.googleapis.com/revoke").mock(
+    route = respx.post("https://oauth2.googleapis.com/revoke").mock(
         return_value=httpx.Response(200, text="")
     )
     result = await accounts_remove("eve@gmail.com")
     assert result["removed"] == "true"
     assert token_store.load("eve@gmail.com") is None
+    assert route.called
+    assert route.calls.last.request.url.params["token"] == "rt"
+
+
+@respx.mock
+async def test_accounts_remove_revokes_refresh_when_access_missing(token_store):
+    token_store.save(
+        AccountToken(email="frank@gmail.com", refresh_token="rt-only", access_token="")
+    )
+    route = respx.post("https://oauth2.googleapis.com/revoke").mock(
+        return_value=httpx.Response(200, text="")
+    )
+    result = await accounts_remove("frank@gmail.com")
+    assert result["removed"] == "true"
+    assert token_store.load("frank@gmail.com") is None
+    assert route.called
+    assert route.calls.last.request.url.params["token"] == "rt-only"
+
+
+@respx.mock
+async def test_accounts_remove_still_deletes_when_revoke_fails(token_store):
+    token_store.save(
+        AccountToken(email="gina@gmail.com", refresh_token="rt", access_token="at")
+    )
+    respx.post("https://oauth2.googleapis.com/revoke").mock(
+        return_value=httpx.Response(503, text="unavailable")
+    )
+    result = await accounts_remove("gina@gmail.com")
+    assert result["removed"] == "true"
+    assert token_store.load("gina@gmail.com") is None
 
 
 @respx.mock
