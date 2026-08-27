@@ -11,7 +11,8 @@ from gmail_mcp.google_oauth import (
     complete_oauth,
     ensure_fresh_token,
     revoke_and_remove,
-    verify_state,
+    take_pending,
+    web_client_credentials,
 )
 from gmail_mcp.oauth_constants import STATUS_ACTIVE, STATUS_NEEDS_AUTH
 from gmail_mcp.token_store import TokenStore
@@ -57,15 +58,42 @@ async def accounts_add() -> dict[str, str]:
             "OAuth consent timed out. Open the URL printed above and complete consent."
         )
 
-    token = await complete_oauth(code, redirect_uri, _store())
-    return {"account": token.email, "status": token.status}
+    return await accounts_add_complete(code, state)
+
+
+async def accounts_auth_start() -> dict[str, str]:
+    """Begin Hand-initiated OAuth. Returns auth_url; complete via public /oauth/callback."""
+    redirect_uri = settings.oauth_public_redirect_uri
+    client_id, client_secret = web_client_credentials()
+    auth_url, state = build_auth_url(
+        redirect_uri,
+        client_id=client_id,
+        client_secret=client_secret,
+    )
+    return {
+        "auth_url": auth_url,
+        "state": state,
+        "redirect_uri": redirect_uri,
+        "instructions": (
+            "Open auth_url in a browser, sign in to Google, and allow access. "
+            "Completion is automatic via the public redirect; then call accounts_list."
+        ),
+    }
 
 
 async def accounts_add_complete(code: str, state: str) -> dict[str, str]:
-    """Complete OAuth when the redirect code is captured manually (tests/harness)."""
-    if not verify_state(state):
+    """Complete OAuth after Google redirects with code+state (stdio harness or HTTP callback)."""
+    pending = take_pending(state)
+    if not pending:
         raise ValueError("Invalid or expired OAuth state")
-    token = await complete_oauth(code, settings.oauth_redirect_uri, _store())
+    token = await complete_oauth(
+        code,
+        pending.redirect_uri,
+        _store(),
+        client_id=pending.client_id,
+        client_secret=pending.client_secret,
+        code_verifier=pending.code_verifier,
+    )
     return {"account": token.email, "status": token.status}
 
 
