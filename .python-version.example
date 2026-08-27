@@ -1,0 +1,8 @@
+# Rename this to .python-version after creating your pyenv
+# Replace 'projectname' with your actual project name
+#
+# Setup:
+#   pyenv virtualenv 3.13 projectname-3.13
+#   pyenv local projectname-3.13
+#
+projectname-3.13

@@ -1,0 +1,143 @@
+# Environment variables and secrets
+.env
+.keys
+.env.*
+.keys.*
+!.env.example
+!.keys.example
+secrets.json
+credentials.json
+client_secret_*.json
+service_account_*.json
+
+# Claude Json File
+.claude/settings.local.json
+
+# Backup files that might contain secrets
+*.bak
+*.backup
+*.old
+*_backup
+*_old
+
+# Django
+*.log
+*.pot
+*.pyc
+__pycache__/
+local_settings.py
+db.sqlite3
+db.sqlite3.OLD
+db.sqlite3-journal
+media/
+staticfiles/
+static/
+
+# Virtual environment
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# PyCharm
+.idea/
+
+# VS Code
+.vscode/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+**/Icon*
+
+# Python
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Logs
+logs/
+*.log
+debug.log
+chat_server.log
+
+# Google Auth
+.gauth.json
+gauth.json
+.credentials/
+client_secret_*.json
+service_account.json
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# Redis
+dump.rdb
+
+# Photos and uploads
+uploads/
+photos/
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.bmp
+*.svg
+*.webp
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
+*.swp
+*~
+
+# Project specific
+/geoip/GeoLite2-City/*
+
+# Python version
+.python-version
+
+# Large sample/test files
+docs/*.pdf
+docs/*.xlsx
+
+# Scripts directory test output
+scripts/*.log
+scripts/*.out
+scripts/*.json
