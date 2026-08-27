@@ -1,6 +1,6 @@
 # Marketing site (pigeon)
 
-Cousin layout to [Share](https://share.c52.com/) (`ShareWeb/web/marketing`).
+Public pages for `pigeon.c52.com`. **Visual identity is pigeon’s own** (Fraunces + Figtree, cool mist + amber accent) — not a Share skin.
 
 | File | Role |
 | --- | --- |
@@ -8,13 +8,11 @@ Cousin layout to [Share](https://share.c52.com/) (`ShareWeb/web/marketing`).
 | `how-it-works.html` | OAuth → MCP → stage → send |
 | `for-agents.html` | Hand / agent seat instructions |
 | `privacy.html` / `terms.html` | Consent-screen HTML (source also in `docs/legal/`) |
-| `site.css` | Shared visual language with Share |
-
-**Working product name:** `pigeon` (better name TBD — do not bike-shed in this folder).
+| `site.css` | Pigeon look |
 
 ## Deploy (WebOne)
 
-Serve this directory (or copies) at the public host document root for `/`, and map:
+Serve this directory at the public host document root for `/`, and map:
 
 - `/` → `index.html`
 - `/how-it-works` → `how-it-works.html` (or keep `.html`)
