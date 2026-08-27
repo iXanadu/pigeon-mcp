@@ -3,15 +3,17 @@
 from __future__ import annotations
 
 import json
+import secrets
 
 from mcp.server.auth.settings import AuthSettings
 from mcp.server.mcpserver import MCPServer
 from starlette.requests import Request
-from starlette.responses import PlainTextResponse, Response
+from starlette.responses import JSONResponse, PlainTextResponse, Response
 
 from gmail_mcp import accounts as accounts_mod
 from gmail_mcp import inbox as inbox_mod
 from gmail_mcp import mail as mail_mod
+from gmail_mcp.attachments import MAX_TOTAL_BYTES, stage_outbox_bytes
 from gmail_mcp.bearer_auth import StaticBearerVerifier
 from gmail_mcp.config import http_public_base_url, settings
 
@@ -77,6 +79,19 @@ def build_mcp(*, http: bool = False) -> MCPServer:
 
     if http:
 
+        def _bearer_ok(request: Request) -> bool:
+            """custom_route skips MCP auth — enforce the static bearer ourselves."""
+            expected = settings.http_bearer_token
+            if not expected:
+                return False
+            header = request.headers.get("authorization", "")
+            if not header.lower().startswith("bearer "):
+                return False
+            got = header[7:].strip()
+            if len(got) != len(expected):
+                return False
+            return secrets.compare_digest(got, expected)
+
         @mcp.custom_route("/oauth/callback", methods=["GET"])
         async def oauth_callback(request: Request) -> Response:
             """Public Google redirect — protected by one-time state + PKCE, not bearer."""
@@ -96,6 +111,72 @@ def build_mcp(*, http: bool = False) -> MCPServer:
             return PlainTextResponse(
                 f"Gmail connected: {result['account']}. You can close this tab.",
                 status_code=200,
+            )
+
+        @mcp.custom_route("/healthz", methods=["GET"])
+        async def healthz(_request: Request) -> Response:
+            """Unauthenticated liveness for watchdogs (curl -sf). No secrets/version."""
+            return PlainTextResponse("ok", status_code=200)
+
+        @mcp.custom_route("/outbox/stage", methods=["POST"])
+        async def outbox_stage(request: Request) -> Response:
+            """Stage a file under outbox_root for later send/reply/forward (bearer required)."""
+            if not _bearer_ok(request):
+                return JSONResponse(
+                    {"error": "invalid_token", "error_description": "Authentication required"},
+                    status_code=401,
+                )
+            content_type = (request.headers.get("content-type") or "").lower()
+            try:
+                if "multipart/form-data" in content_type:
+                    form = await request.form()
+                    upload = form.get("file")
+                    if upload is None:
+                        return JSONResponse({"error": "file field required"}, status_code=400)
+                    filename = getattr(upload, "filename", None) or form.get("filename") or "attachment.bin"
+                    if hasattr(upload, "read"):
+                        data = await upload.read()
+                    else:
+                        return JSONResponse({"error": "file field required"}, status_code=400)
+                    overwrite = str(form.get("overwrite", "")).lower() in {"1", "true", "yes"}
+                else:
+                    # Raw body + filename query/header for simple agent clients
+                    filename = (
+                        request.query_params.get("filename")
+                        or request.headers.get("x-filename")
+                        or "attachment.bin"
+                    )
+                    data = await request.body()
+                    overwrite = request.query_params.get("overwrite", "").lower() in {
+                        "1",
+                        "true",
+                        "yes",
+                    }
+                if not data:
+                    return JSONResponse({"error": "empty body"}, status_code=400)
+                if len(data) > MAX_TOTAL_BYTES:
+                    return JSONResponse(
+                        {"error": f"file exceeds {MAX_TOTAL_BYTES} bytes"},
+                        status_code=413,
+                    )
+                path = stage_outbox_bytes(
+                    settings.outbox_root,
+                    filename=str(filename),
+                    data=data,
+                    overwrite=overwrite,
+                )
+            except ValueError as exc:
+                return JSONResponse({"error": str(exc)}, status_code=400)
+            except Exception as exc:
+                return JSONResponse({"error": f"stage failed: {exc}"}, status_code=500)
+            return JSONResponse(
+                {
+                    "path": str(path),
+                    "filename": path.name,
+                    "size": path.stat().st_size,
+                    "outbox_root": str(settings.outbox_root.expanduser().resolve()),
+                },
+                status_code=201,
             )
 
     @mcp.tool()

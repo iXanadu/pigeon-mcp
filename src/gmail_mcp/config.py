@@ -1,11 +1,19 @@
 from pathlib import Path
 from urllib.parse import urlparse
 
+import os
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _ENV_FILE = _REPO_ROOT / ".env"
 _KEYS_FILE = _REPO_ROOT / ".keys"
+
+
+def _dotenv_files() -> tuple[Path, ...] | None:
+    """Paths that exist — never pass None into pydantic-settings (env-only deploy)."""
+    files = tuple(p for p in (_ENV_FILE, _KEYS_FILE) if p.is_file())
+    return files or None
 
 
 class Settings(BaseSettings):
@@ -45,13 +53,30 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(
         env_prefix="GMAIL_MCP_",
-        env_file=(_ENV_FILE if _ENV_FILE.is_file() else None, _KEYS_FILE if _KEYS_FILE.is_file() else None),
+        env_file=_dotenv_files(),
         env_file_encoding="utf-8",
         extra="ignore",
     )
 
 
 settings = Settings()
+
+
+def ensure_data_dirs() -> None:
+    """Create storage dirs on every startup; chmod 0700 unconditionally (self-heal /tmp wipe)."""
+    for path in (settings.outbox_root, settings.download_root, settings.tokens_dir):
+        p = path.expanduser()
+        p.mkdir(parents=True, exist_ok=True)
+        resolved = p.resolve()
+        if not resolved.is_dir():
+            raise RuntimeError(f"storage path is not a directory: {resolved}")
+        resolved.chmod(0o700)
+        if not os.access(resolved, os.W_OK):
+            raise RuntimeError(f"storage path not writable: {resolved}")
+        parent = resolved.parent
+        # /tmp is 1777 — mkdir leaves 775; chmod parent so attachments aren't listable.
+        if str(parent).startswith(("/tmp/", "/private/tmp/")) and parent.is_dir():
+            parent.chmod(0o700)
 
 
 def http_public_base_url() -> str:

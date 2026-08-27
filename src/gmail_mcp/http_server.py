@@ -3,10 +3,11 @@
 import asyncio
 
 from gmail_mcp.app import build_mcp
-from gmail_mcp.config import settings
+from gmail_mcp.config import ensure_data_dirs, settings
 
 
 async def _amain() -> None:
+    ensure_data_dirs()
     mcp = build_mcp(http=True)
     await mcp.run_streamable_http_async(
         host=settings.http_host,
