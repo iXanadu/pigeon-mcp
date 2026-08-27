@@ -7,37 +7,33 @@ Gmail connector for MCP: one tool module, two transports (stdio for local harnes
 
 ## Project Structure
 ```
-projectname/
-├── AGENTS.md         # This file — project identity. Read by ALL providers.
-├── CLAUDE.md         # symlink -> AGENTS.md (Claude Code compat)
-├── skills/           # init, startup, wrapup as SKILL.md files
-├── .claude/
-│   └── skills        # symlink -> ../skills (Claude Code discovery)
-├── docs/                 # Reference docs and specs
-│   ├── CANONICAL-DOCS.md # pointer to the shared bibles/ — never copied per-project
-│   └── specs/            # PRD, feature specs, technical requirements
-├── .env              # Non-sensitive config (not committed)
-├── .keys             # Secrets (not committed)
-├── .python-version   # pyenv virtualenv name
-└── requirements.txt
+gmail-mcp/
+├── AGENTS.md
+├── CLAUDE.md         # symlink -> AGENTS.md
+├── src/gmail_mcp/    # MCP server, config, doctor
+├── tests/            # conftest pins src/
+├── scripts/          # install-mcp-wrapper.sh
+├── docs/specs/       # owner spec + pre-build review
+├── .env              # non-secret (not committed)
+├── .keys             # secrets (not committed)
+└── pyproject.toml    # package + entrypoints gmail-mcp, gmail-doctor
 ```
 
 ## Commands
 ```bash
-# Python environment
-pyenv virtualenv 3.13 projectname-3.13
-pyenv local projectname-3.13
-pip install -r requirements.txt
-
-# Run tests
+pyenv virtualenv 3.13 gmail-mcp-3.13
+pyenv local gmail-mcp-3.13
+pip install -e '.[dev]'
 pytest tests/ -v
+gmail-doctor
 ```
 
 ## Conventions
-- Config: `.env` (non-sensitive) + `.keys` (secrets, never commit)
-- Python: pyenv + pyenv-virtualenv (NEVER `python -m venv`)
-- Virtualenv naming: `{project}-{major}.{minor}`
-- Database: PostgreSQL (no SQLite, even for local dev)
+- Config: `.env` (non-sensitive) + `.keys` (secrets, never commit). Prefix `GMAIL_MCP_`.
+- Python: pyenv + pyenv-virtualenv (NEVER `python -m venv`). Venv: `gmail-mcp-3.13`.
+- No database. Tokens are files under `~/.config/gmail-mcp/tokens` mode 0600.
+- Attachments only from outbox root (default `~/Outbox`).
+- Do not bind HTTP on 8766 — that port is Tailscale HTTPS for AgentBeast.
 
 ## State Management
 
