@@ -1,0 +1,5 @@
+# Secrets — NEVER commit this file. chmod 600 after copying.
+# Copy to .keys and fill in values.
+
+PROJECTNAME_DB_PASSWORD=
+PROJECTNAME_API_TOKEN=
