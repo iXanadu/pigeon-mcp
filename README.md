@@ -6,7 +6,7 @@ Gmail connector for MCP clients. One server, many Gmail accounts via OAuth refre
 
 ## Features
 
-- **Multi-account OAuth** — add mailboxes with `accounts_add`; tokens stored locally (mode 0600)
+- **Multi-account OAuth** — add mailboxes with `accounts_add`; tokens stored as `gmail-token-*.json` (mode 0640)
 - **Send / reply / forward** — server-built MIME, outbox file paths only, 25 MB cap, idempotency keys, proof on success
 - **Read / organise** — search (threads + pagination), get thread/message, labels, archive/trash, drafts
 - **Attachments** — send from `~/Outbox` (configurable); download to `~/Inbox` (configurable)
@@ -66,7 +66,7 @@ gmail-mcp   # stdio — required for accounts_add and accounts_remove
 
 Call `accounts_add` from your MCP client. When consent finishes, the server records the Gmail address Google returns; that address is the `account` key for every other tool.
 
-Tokens land in `~/.config/gmail-mcp/tokens/` (mode 0600). Copy that directory to any other host running the same server if needed.
+Tokens land in `GMAIL_MCP_TOKENS_DIR` (default `~/.config/gmail-mcp/tokens/`) as `gmail-token-<account>.json` (mode 0640). On a production host, set `GMAIL_MCP_TOKENS_DIR` to a directory your backup actually sweeps (often next to the app checkout), then copy the token files there.
 
 #### Headless server (no local browser)
 
@@ -84,7 +84,7 @@ Open the authorization URL the server prints (or trigger `accounts_add` through 
 
 **B — Consent on a desktop, copy tokens**
 
-Run `accounts_add` once on a Mac or PC with a browser and the same `.env` / `.keys`. After consent, copy `~/.config/gmail-mcp/tokens/` to the production host (same paths, mode 0600). No re-consent unless Google revokes the refresh token.
+Run `accounts_add` once on a Mac or PC with a browser and the same `.env` / `.keys`. After consent, copy the `gmail-token-*.json` files to the production host’s `GMAIL_MCP_TOKENS_DIR` (mode 0640). No re-consent unless Google revokes the refresh token.
 
 ## Deployment layout
 

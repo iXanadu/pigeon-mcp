@@ -27,7 +27,7 @@ def token_store(tmp_path, monkeypatch):
     return TokenStore(store_dir)
 
 
-def test_token_file_mode_0600(token_store):
+def test_token_file_mode_and_basename(token_store):
     token = AccountToken(
         email="alice@example.com",
         refresh_token="rt",
@@ -35,10 +35,28 @@ def test_token_file_mode_0600(token_store):
         status=STATUS_ACTIVE,
     )
     token_store.save(token)
-    mode = stat.S_IMODE(os.stat(token_store.path_for("alice@example.com")).st_mode)
-    assert mode == 0o600
+    path = token_store.path_for("alice@example.com")
+    assert path.name.startswith("gmail-token-")
+    assert "token" in path.name
+    mode = stat.S_IMODE(os.stat(path).st_mode)
+    assert mode == 0o640
     dir_mode = stat.S_IMODE(os.stat(token_store.tokens_dir).st_mode)
-    assert dir_mode == 0o700
+    assert dir_mode == 0o750
+
+
+def test_token_store_migrates_legacy_basename(token_store):
+    legacy = token_store.tokens_dir / "bob_at_example.com.json"
+    token_store.ensure_dir()
+    legacy.write_text(
+        '{"email":"bob@example.com","refresh_token":"rt","access_token":"at","status":"active"}\n',
+        encoding="utf-8",
+    )
+    loaded = token_store.load("bob@example.com")
+    assert loaded is not None
+    assert loaded.email == "bob@example.com"
+    token_store.save(loaded)
+    assert token_store.path_for("bob@example.com").is_file()
+    assert not legacy.is_file()
 
 
 @respx.mock
