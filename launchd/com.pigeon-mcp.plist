@@ -2,12 +2,8 @@
 <!--
   pigeon-mcp LaunchAgent (macOS) — runs as the logged-in user.
 
-  Install:
-    cp launchd/com.pigeon-mcp.plist ~/Library/LaunchAgents/
-    # Edit YOUR_USERNAME and python path if needed, then:
-    ./scripts/start.sh
-
-  Reverse-proxy 127.0.0.1:8879 for remote MCP clients.
+  Install via ./scripts/start.sh (rewrites placeholders from this checkout).
+  Reverse-proxy the HTTP bind for remote MCP clients.
 -->
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -16,14 +12,14 @@
     <string>com.pigeon-mcp</string>
     <key>ProgramArguments</key>
     <array>
-        <string>/Users/YOUR_USERNAME/.pyenv/versions/pigeon-mcp-3.13/bin/pigeon-mcp-http</string>
+        <string>__PIGEON_HTTP_BIN__</string>
     </array>
     <key>WorkingDirectory</key>
-    <string>/Users/YOUR_USERNAME/projects/pigeon-mcp</string>
+    <string>__PIGEON_APP_DIR__</string>
     <key>EnvironmentVariables</key>
     <dict>
         <key>HOME</key>
-        <string>/Users/YOUR_USERNAME</string>
+        <string>__PIGEON_HOME__</string>
         <key>PATH</key>
         <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
     </dict>
@@ -32,8 +28,8 @@
     <key>KeepAlive</key>
     <true/>
     <key>StandardOutPath</key>
-    <string>/Users/YOUR_USERNAME/projects/pigeon-mcp/logs/pigeon-mcp.log</string>
+    <string>__PIGEON_APP_DIR__/logs/pigeon-mcp.log</string>
     <key>StandardErrorPath</key>
-    <string>/Users/YOUR_USERNAME/projects/pigeon-mcp/logs/pigeon-mcp.err</string>
+    <string>__PIGEON_APP_DIR__/logs/pigeon-mcp.err</string>
 </dict>
 </plist>
