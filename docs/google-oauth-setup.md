@@ -12,7 +12,7 @@ the client in Google Cloud Console — the redirect URI should be
 
 | Step | Where | What |
 | --- | --- | --- |
-| 1 | APIs & Services → Library | Enable **Gmail API** |
+| 1 | APIs & Services → Library | Enable **Gmail API** (required). Calendar / Drive may already be enabled on the project for *future* tools — this server does not use them yet; do not add those OAuth scopes until it does. |
 | 2 | OAuth consent screen | See [User type](#user-type-workspace-vs-personal-gmail) below |
 | 3 | Credentials → Create | **OAuth client ID → Web application** |
 | 4 | Web client | Authorized redirect URI **`https://<your-host>/oauth/callback`** (must match `GMAIL_MCP_OAUTH_PUBLIC_REDIRECT_URI` in `.env`) |

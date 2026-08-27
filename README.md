@@ -4,6 +4,8 @@ Gmail connector for MCP clients. One server, many Gmail accounts via OAuth refre
 
 **Not** a wrapper around Google's hosted Gmail MCP — this builds RFC822 on the host and talks to `gmail.googleapis.com` directly.
 
+**Scope today:** Gmail only. The Google Cloud project may also have **Calendar** and **Drive** APIs enabled for later work — this server does not call them yet. Do not request Calendar/Drive OAuth scopes until those tools ship.
+
 ## Features
 
 - **Multi-account OAuth** — add mailboxes with `accounts_add`; tokens stored as `gmail-token-*.json` (mode 0640)
