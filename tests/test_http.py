@@ -60,6 +60,15 @@ async def test_http_401_advertises_mcp_resource_metadata(monkeypatch):
                 "grant_type": "authorization_code",
                 "code": code,
                 "redirect_uri": "https://hand.example/cb",
+                "client_secret": settings.http_bearer_token,
+            },
+        )
+        bare = await client.post(
+            "/token",
+            data={
+                "grant_type": "authorization_code",
+                "code": "forged",
+                "redirect_uri": "https://hand.example/cb",
             },
         )
         cc = await client.post(
@@ -78,9 +87,10 @@ async def test_http_401_advertises_mcp_resource_metadata(monkeypatch):
     assert "authorization_code" in meta["grant_types_supported"]
     assert token.status_code == 200
     assert token.json()["access_token"] == settings.http_bearer_token
+    assert bare.status_code == 401
     assert cc.status_code == 200
     assert reg.status_code == 201
-    assert reg.json()["client_secret"] == settings.http_bearer_token
+    assert reg.json()["client_secret"] == ""
 
 
 async def test_oauth_callback_rejects_bad_state(http_app):

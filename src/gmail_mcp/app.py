@@ -128,14 +128,13 @@ def build_mcp(*, http: bool = False) -> MCPServer:
                     "token_endpoint_auth_methods_supported": [
                         "client_secret_post",
                         "client_secret_basic",
-                        "none",
                     ],
                 }
             )
 
         @mcp.custom_route("/register", methods=["POST"])
         async def mcp_oauth_register(request: Request) -> Response:
-            """Dynamic client registration — returns a client that can redeem the static bearer."""
+            """DCR stub — does NOT mint the bearer. Hand must use the pre-shared HTTP bearer."""
             try:
                 body = await request.json()
             except Exception:
@@ -144,18 +143,20 @@ def build_mcp(*, http: bool = False) -> MCPServer:
             return JSONResponse(
                 {
                     "client_id": "gmail-mcp-hand",
-                    "client_secret": settings.http_bearer_token,
+                    # Never return the real bearer via public DCR.
+                    "client_secret": "",
                     "redirect_uris": redirect_uris,
                     "grant_types": ["authorization_code", "client_credentials"],
                     "response_types": ["code"],
                     "token_endpoint_auth_method": "client_secret_post",
+                    "client_secret_expires_at": 0,
                 },
                 status_code=201,
             )
 
         @mcp.custom_route("/authorize", methods=["GET"])
         async def mcp_oauth_authorize(request: Request) -> Response:
-            """No login UI — immediately issue a one-time code and redirect back to Hand."""
+            """No login UI — issue a one-time code; /token still requires the shared secret."""
             if request.query_params.get("response_type", "code") != "code":
                 return PlainTextResponse("unsupported_response_type", status_code=400)
             redirect_uri = request.query_params.get("redirect_uri")
@@ -189,6 +190,10 @@ def build_mcp(*, http: bool = False) -> MCPServer:
                     return JSONResponse({"error": "invalid_client"}, status_code=401)
                 return _issue_bearer()
             if grant == "authorization_code":
+                # /authorize is public; redemption requires the pre-shared bearer as client_secret.
+                secret = _client_secret_from_request(request, form)
+                if secret != settings.http_bearer_token:
+                    return JSONResponse({"error": "invalid_client"}, status_code=401)
                 code = str(form.get("code") or "")
                 redirect_uri = str(form.get("redirect_uri") or "")
                 _gc_auth_codes()
