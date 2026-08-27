@@ -13,6 +13,14 @@ service_account_*.json
 # Claude Json File
 .claude/settings.local.json
 
+# Operator / agent-only (not for public clones)
+AGENTS.md
+CLAUDE.md
+.engram.cfg
+BACKLOG.md
+skills/
+.claude/skills/
+
 # Backup files that might contain secrets
 *.bak
 *.backup
