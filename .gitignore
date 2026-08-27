@@ -19,7 +19,8 @@ CLAUDE.md
 .engram.cfg
 BACKLOG.md
 skills/
-.claude/skills/
+.claude/
+
 
 # Backup files that might contain secrets
 *.bak
