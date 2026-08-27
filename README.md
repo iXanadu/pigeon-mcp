@@ -21,11 +21,13 @@ Gmail connector for MCP clients. One server, many Gmail accounts via OAuth refre
 ## Quick start
 
 ```bash
-git clone <repo-url> ~/projects/gmail-mcp
-cd ~/projects/gmail-mcp
+git clone https://github.com/iXanadu/gmcp.git
+cd gmcp
 
-# Virtualenv + editable install
-./scripts/install-mcp-wrapper.sh
+# Python 3.12+ (example with pyenv)
+pyenv virtualenv 3.13 gmail-mcp-3.13
+pyenv local gmail-mcp-3.13
+pip install -e '.[dev]'
 
 # Config (see examples/)
 cp examples/.env.example .env

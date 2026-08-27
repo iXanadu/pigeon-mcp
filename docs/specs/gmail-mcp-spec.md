@@ -54,7 +54,7 @@ Body:
 - `htmlBody` only: `text/html` plus a plain alternative you generate without rewriting links.
 - both: `multipart/alternative`. Use the HTML as written.
 
-Never rewrite a URL. Never wrap `google.com/url`. Never "linkify." If the caller wrote `https://share.c52.com/s/abc`, that string is the href.
+Never rewrite a URL. Never wrap `google.com/url`. Never "linkify." If the caller wrote `https://example.com/s/abc`, that string is the href.
 
 `reply` and `forward` take the same attachment list as `send`. Thread with `In-Reply-To` and `References` from the source message. Stay on that thread.
 
