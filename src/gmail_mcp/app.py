@@ -13,7 +13,7 @@ from gmail_mcp import accounts as accounts_mod
 from gmail_mcp import inbox as inbox_mod
 from gmail_mcp import mail as mail_mod
 from gmail_mcp.bearer_auth import StaticBearerVerifier
-from gmail_mcp.config import settings
+from gmail_mcp.config import http_public_base_url, settings
 
 VERSION = "0.1.0"
 
@@ -59,9 +59,10 @@ def build_mcp(*, http: bool = False) -> MCPServer:
     if http:
         if not settings.http_bearer_token:
             raise RuntimeError("GMAIL_MCP_HTTP_BEARER_TOKEN is required for HTTP transport")
+        public_base = http_public_base_url()
         auth = AuthSettings(
-            issuer_url=f"http://{settings.http_host}:{settings.http_port}",
-            resource_server_url=f"http://{settings.http_host}:{settings.http_port}",
+            issuer_url=public_base,
+            resource_server_url=public_base,
         )
         mcp = MCPServer(
             "gmail-mcp",

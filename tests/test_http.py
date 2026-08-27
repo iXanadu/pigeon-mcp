@@ -24,6 +24,24 @@ async def test_http_without_bearer_returns_401(http_app):
     assert response.status_code == 401
 
 
+async def test_http_401_advertises_public_resource_metadata(monkeypatch):
+    monkeypatch.setattr(
+        settings,
+        "oauth_public_redirect_uri",
+        "https://gmcp.example.com/oauth/callback",
+    )
+    app = build_mcp(http=True).streamable_http_app(
+        streamable_http_path="/mcp",
+        host=settings.http_host,
+    )
+    transport = ASGITransport(app=app, raise_app_exceptions=False)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.post("/mcp", json={"jsonrpc": "2.0", "method": "initialize", "id": 1})
+    assert response.status_code == 401
+    www = response.headers.get("www-authenticate", "")
+    assert "resource_metadata=\"https://gmcp.example.com/.well-known/oauth-protected-resource\"" in www
+
+
 async def test_oauth_callback_rejects_bad_state(http_app):
     transport = ASGITransport(app=http_app, raise_app_exceptions=False)
     async with AsyncClient(transport=transport, base_url="http://test") as client:

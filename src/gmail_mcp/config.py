@@ -1,5 +1,5 @@
-import os
 from pathlib import Path
+from urllib.parse import urlparse
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     # HTTP transport (remote MCP clients via gateway)
     http_host: str = "127.0.0.1"
     http_port: int = 8879
+    # Public URL Hand/gateway uses (defaults from oauth_public_redirect_uri origin)
+    http_public_url: str = ""
     http_bearer_token: str = ""
 
     # Attachment outbox — only paths under this root are accepted for send
@@ -50,3 +52,16 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+
+def http_public_base_url() -> str:
+    """Origin remote MCP clients reach — not the local bind address."""
+    explicit = settings.http_public_url.strip()
+    if explicit:
+        return explicit.rstrip("/")
+    public_redirect = settings.oauth_public_redirect_uri.strip()
+    if public_redirect:
+        parsed = urlparse(public_redirect)
+        if parsed.scheme and parsed.netloc:
+            return f"{parsed.scheme}://{parsed.netloc}"
+    return f"http://{settings.http_host}:{settings.http_port}"
