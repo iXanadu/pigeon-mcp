@@ -8,7 +8,13 @@ import pytest
 import respx
 from unittest.mock import AsyncMock, patch
 
-from gmail_mcp.accounts import accounts_add, accounts_add_complete, accounts_list, accounts_remove
+from gmail_mcp.accounts import (
+    accounts_add,
+    accounts_add_complete,
+    accounts_auth_start,
+    accounts_list,
+    accounts_remove,
+)
 from gmail_mcp.config import settings
 from gmail_mcp.google_oauth import build_auth_url, complete_oauth, refresh_access_token
 from gmail_mcp.oauth_constants import STATUS_ACTIVE, STATUS_NEEDS_AUTH
@@ -90,7 +96,14 @@ async def test_complete_oauth_saves_account(token_store):
     respx.get(GMAIL_PROFILE).mock(
         return_value=httpx.Response(200, json={"emailAddress": "bob@gmail.com"})
     )
-    token = await complete_oauth("code-1", settings.oauth_redirect_uri, token_store)
+    token = await complete_oauth(
+        "code-1",
+        settings.oauth_redirect_uri,
+        token_store,
+        client_id="test-client-id",
+        client_secret="test-client-secret",
+        code_verifier="test-verifier",
+    )
     assert token.email == "bob@gmail.com"
     assert token.status == STATUS_ACTIVE
     loaded = token_store.load("bob@gmail.com")
@@ -174,6 +187,8 @@ async def test_accounts_add_awaits_callback_and_returns_email(token_store, monke
 async def test_accounts_add_complete(token_store):
     auth_url, state = build_auth_url(settings.oauth_redirect_uri)
     assert "state=" in auth_url
+    assert "code_challenge=" in auth_url
+    assert "code_challenge_method=S256" in auth_url
     respx.post("https://oauth2.googleapis.com/token").mock(
         return_value=httpx.Response(
             200,
@@ -191,3 +206,14 @@ async def test_accounts_add_complete(token_store):
     assert result["account"] == "frank@gmail.com"
     rows = await accounts_list()
     assert rows == [{"account": "frank@gmail.com", "status": STATUS_ACTIVE}]
+
+
+async def test_accounts_auth_start_returns_public_url(token_store, monkeypatch):
+    monkeypatch.setattr(settings, "oauth_public_redirect_uri", "https://gmcp.example/oauth/callback")
+    monkeypatch.setattr(settings, "google_web_client_id", "web-id")
+    monkeypatch.setattr(settings, "google_web_client_secret", "web-secret")
+    result = await accounts_auth_start()
+    assert result["redirect_uri"] == "https://gmcp.example/oauth/callback"
+    assert "accounts.google.com" in result["auth_url"]
+    assert "code_challenge=" in result["auth_url"]
+    assert result["state"]

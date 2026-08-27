@@ -5,8 +5,6 @@ from __future__ import annotations
 import asyncio
 from urllib.parse import parse_qs, urlparse
 
-from gmail_mcp.google_oauth import verify_state
-
 _HOST = "127.0.0.1"
 
 
@@ -31,8 +29,9 @@ async def run_callback_server(expected_state: str, redirect_uri: str) -> str | N
             params = parse_qs(parsed_req.query)
             code = (params.get("code") or [None])[0]
             state = (params.get("state") or [None])[0]
+            # Do not consume server-side state here — accounts_add_complete needs PKCE material.
             body = b"OAuth complete. You can close this tab."
-            if code and state and state == expected_state and verify_state(state):
+            if code and state and state == expected_state:
                 if not result.done():
                     result.set_result(code)
             else:

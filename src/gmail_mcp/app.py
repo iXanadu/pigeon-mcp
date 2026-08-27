@@ -6,6 +6,8 @@ import json
 
 from mcp.server.auth.settings import AuthSettings
 from mcp.server.mcpserver import MCPServer
+from starlette.requests import Request
+from starlette.responses import PlainTextResponse, Response
 
 from gmail_mcp import accounts as accounts_mod
 from gmail_mcp import inbox as inbox_mod
@@ -20,6 +22,7 @@ HTTP_TOOL_NAMES = frozenset(
     {
         "gmail_status",
         "accounts_list",
+        "accounts_auth_start",
         "search",
         "get_thread",
         "get_message",
@@ -39,7 +42,7 @@ HTTP_TOOL_NAMES = frozenset(
     }
 )
 
-# OAuth account management stays on stdio only.
+# Local browser loopback consent + remove stay on stdio.
 STDIO_ONLY_TOOL_NAMES = frozenset({"accounts_add", "accounts_remove"})
 
 
@@ -69,6 +72,29 @@ def build_mcp(*, http: bool = False) -> MCPServer:
     else:
         mcp = MCPServer("gmail-mcp", version=VERSION)
 
+    if http:
+
+        @mcp.custom_route("/oauth/callback", methods=["GET"])
+        async def oauth_callback(request: Request) -> Response:
+            """Public Google redirect — protected by one-time state + PKCE, not bearer."""
+            code = request.query_params.get("code")
+            state = request.query_params.get("state")
+            err = request.query_params.get("error")
+            if err:
+                return PlainTextResponse(f"OAuth error: {err}", status_code=400)
+            if not code or not state:
+                return PlainTextResponse("Missing code or state", status_code=400)
+            try:
+                result = await accounts_mod.accounts_add_complete(code, state)
+            except ValueError as exc:
+                return PlainTextResponse(str(exc), status_code=400)
+            except Exception as exc:
+                return PlainTextResponse(f"OAuth failed: {exc}", status_code=500)
+            return PlainTextResponse(
+                f"Gmail connected: {result['account']}. You can close this tab.",
+                status_code=200,
+            )
+
     @mcp.tool()
     async def gmail_status() -> str:
         """Report server version and configuration (no Gmail API calls)."""
@@ -88,11 +114,17 @@ def build_mcp(*, http: bool = False) -> MCPServer:
         rows = await accounts_mod.accounts_list()
         return json.dumps(rows, indent=2)
 
+    @mcp.tool()
+    async def accounts_auth_start() -> str:
+        """Start GrokBot/Hand OAuth. Returns a Google URL; completion is via /oauth/callback."""
+        result = await accounts_mod.accounts_auth_start()
+        return json.dumps(result, indent=2)
+
     if not http:
 
         @mcp.tool()
         async def accounts_add() -> str:
-            """Connect a Gmail account via OAuth. Blocks until browser consent completes."""
+            """Connect a Gmail account via local loopback OAuth (stdio only)."""
             result = await accounts_mod.accounts_add()
             return json.dumps(result, indent=2)
 

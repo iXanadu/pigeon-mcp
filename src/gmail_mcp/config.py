@@ -28,12 +28,17 @@ class Settings(BaseSettings):
     # OAuth token storage (populated after accounts.add)
     tokens_dir: Path = Path.home() / ".config" / "gmail-mcp" / "tokens"
 
-    # Google OAuth client (Desktop app) — secret in .keys
+    # Google OAuth client — Desktop for stdio; optional Web slots for Hand/public callback
     google_client_id: str = ""
     google_client_secret: str = ""
+    google_web_client_id: str = ""
+    google_web_client_secret: str = ""
 
-    # OAuth loopback callback (register in Google Cloud Console)
+    # OAuth loopback callback (Desktop / stdio accounts_add)
     oauth_redirect_uri: str = "http://127.0.0.1:8767/oauth/callback"
+
+    # Public HTTPS callback for Hand-initiated consent (Web application client)
+    oauth_public_redirect_uri: str = "https://gmcp.c52.com/oauth/callback"
 
     model_config = SettingsConfigDict(
         env_prefix="GMAIL_MCP_",
