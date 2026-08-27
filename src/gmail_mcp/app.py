@@ -6,8 +6,9 @@ import json
 
 from mcp.server.auth.settings import AuthSettings
 from mcp.server.mcpserver import MCPServer
+from pydantic import AnyHttpUrl
 from starlette.requests import Request
-from starlette.responses import PlainTextResponse, Response
+from starlette.responses import JSONResponse, PlainTextResponse, Response
 
 from gmail_mcp import accounts as accounts_mod
 from gmail_mcp import inbox as inbox_mod
@@ -59,13 +60,11 @@ def build_mcp(*, http: bool = False) -> MCPServer:
     if http:
         if not settings.http_bearer_token:
             raise RuntimeError("GMAIL_MCP_HTTP_BEARER_TOKEN is required for HTTP transport")
-        # Static bearer only. Do NOT publish Protected Resource Metadata
-        # (resource_server_url=None): Hand/Cursor then chase authorization_servers
-        # and ignore the configured Authorization header (known client bug).
         public_base = http_public_base_url()
+        resource_url = AnyHttpUrl(f"{public_base.rstrip('/')}/mcp")
         auth = AuthSettings(
             issuer_url=public_base,
-            resource_server_url=None,
+            resource_server_url=resource_url,
         )
         mcp = MCPServer(
             "gmail-mcp",
@@ -77,6 +76,36 @@ def build_mcp(*, http: bool = False) -> MCPServer:
         mcp = MCPServer("gmail-mcp", version=VERSION)
 
     if http:
+
+        @mcp.custom_route("/.well-known/oauth-authorization-server", methods=["GET"])
+        async def mcp_oauth_metadata(_request: Request) -> Response:
+            """Minimal AS metadata — static bearer via client_credentials at /token."""
+            return JSONResponse(
+                {
+                    "issuer": public_base,
+                    "authorization_endpoint": f"{public_base}/authorize",
+                    "token_endpoint": f"{public_base}/token",
+                    "response_types_supported": ["code"],
+                    "grant_types_supported": ["client_credentials"],
+                    "token_endpoint_auth_methods_supported": ["client_secret_post"],
+                }
+            )
+
+        @mcp.custom_route("/token", methods=["POST"])
+        async def mcp_oauth_token(request: Request) -> Response:
+            """Issue configured bearer for client_credentials (connector bootstrap)."""
+            form = await request.form()
+            if form.get("grant_type") != "client_credentials":
+                return JSONResponse({"error": "unsupported_grant_type"}, status_code=400)
+            if form.get("client_secret") != settings.http_bearer_token:
+                return JSONResponse({"error": "invalid_client"}, status_code=401)
+            return JSONResponse(
+                {
+                    "access_token": settings.http_bearer_token,
+                    "token_type": "Bearer",
+                    "expires_in": 86400,
+                }
+            )
 
         @mcp.custom_route("/oauth/callback", methods=["GET"])
         async def oauth_callback(request: Request) -> Response:
