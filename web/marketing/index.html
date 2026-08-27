@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>gmcp — Gmail for your agent</title>
+  <meta name="description" content="Self-hosted Gmail over MCP. Your agent reads and sends real mail with OAuth you control — no hosted middleman.">
+  <link rel="stylesheet" href="site.css">
+</head>
+<body>
+  <div class="w">
+    <header class="mast">
+      <div class="rail">
+        <b>gmcp</b>
+        <span>Self-hosted Gmail MCP</span>
+        <span class="sp">gmcp.c52.com</span>
+      </div>
+      <nav>
+        <a href="index.html" aria-current="page">Overview</a>
+        <a href="how-it-works.html">How it works</a>
+        <a href="for-agents.html">For agents</a>
+        <a href="https://github.com/iXanadu/gmcp">GitHub ↗</a>
+      </nav>
+    </header>
+
+    <h1>Gmail for your agent.</h1>
+    <p class="lede">A self-hosted Model Context Protocol server that talks to Gmail on your behalf. You own the OAuth client, the refresh tokens, and the host. Nothing is registered with a third-party mail SaaS.</p>
+
+    <div class="row">
+      <a class="b" href="https://github.com/iXanadu/gmcp">Star on GitHub</a>
+      <a class="b b2" href="how-it-works.html">How it works</a>
+    </div>
+
+    <h2>What it does</h2>
+    <p>Connect one or more Gmail accounts. Your agent searches threads, reads messages, labels and archives, drafts and sends real MIME — including file attachments staged onto the server — with a live Gmail signature appended at send time.</p>
+
+    <dl>
+      <dt>accounts_*</dt>
+      <dd>List connected mailboxes; start Google consent for Hand; revoke.</dd>
+      <dt>search / get_*</dt>
+      <dd>Find threads and messages without dumping megabytes of base64 into the model.</dd>
+      <dt>send / reply / forward</dt>
+      <dd>Server-built RFC822. Attachments are paths under an outbox root — never inline content from the chat.</dd>
+      <dt>outbox/stage</dt>
+      <dd>Authenticated HTTP upload so a remote agent can drop a file, then attach it, with no scp.</dd>
+    </dl>
+
+    <h2>Built for Hand</h2>
+    <p>gmcp is aimed at agent seats (GrokBot / Hand and similar). The HTTP transport speaks Streamable MCP behind a bearer token. Consent for a mailbox can start from the agent and finish in your browser via a public HTTPS callback — no Desktop loopback required for that path.</p>
+
+    <h2>What it is instead of</h2>
+    <div class="cols">
+      <div>
+        <h3>Google’s hosted Gmail MCP</h3>
+        <p>A third-party product surface. gmcp builds MIME on <em>your</em> host and calls <code>gmail.googleapis.com</code> directly.</p>
+      </div>
+      <div>
+        <h3>Pasting tokens in chat</h3>
+        <p>Refresh tokens stay on disk (mode 0640). The agent never sees them.</p>
+      </div>
+      <div>
+        <h3>scp for every attachment</h3>
+        <p><code>POST /outbox/stage</code> then <code>send</code> with the returned path.</p>
+      </div>
+    </div>
+
+    <h2>Run it yourself</h2>
+    <pre><code>git clone https://github.com/iXanadu/gmcp.git
+cd gmcp
+pip install -e .
+cp examples/config.example .env
+cp examples/secrets.example .keys
+# fill Google Web client + bearer, then:
+gmail-doctor
+gmail-mcp-http</code></pre>
+    <p class="m s">Full OAuth notes (In production, unverified warning, scopes): <a href="https://github.com/iXanadu/gmcp/blob/main/docs/google-oauth-setup.md">docs/google-oauth-setup.md</a>.</p>
+
+    <footer>
+      <span>Working name <b>gmcp</b> — better name TBD.</span>
+      <a href="privacy.html">Privacy</a>
+      <a href="terms.html">Terms</a>
+      <span>Homedog.com Inc.</span>
+    </footer>
+  </div>
+</body>
+</html>
