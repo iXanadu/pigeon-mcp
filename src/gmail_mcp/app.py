@@ -2,17 +2,12 @@
 
 from __future__ import annotations
 
-import base64
 import json
-import secrets
-import time
-from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from mcp.server.auth.settings import AuthSettings
 from mcp.server.mcpserver import MCPServer
-from pydantic import AnyHttpUrl
 from starlette.requests import Request
-from starlette.responses import JSONResponse, PlainTextResponse, RedirectResponse, Response
+from starlette.responses import PlainTextResponse, Response
 
 from gmail_mcp import accounts as accounts_mod
 from gmail_mcp import inbox as inbox_mod
@@ -21,10 +16,6 @@ from gmail_mcp.bearer_auth import StaticBearerVerifier
 from gmail_mcp.config import http_public_base_url, settings
 
 VERSION = "0.1.0"
-
-# One-time auth codes for Hand's authorization_code bootstrap (static bearer AS).
-_AUTH_CODES: dict[str, dict[str, float | str]] = {}
-_AUTH_CODE_TTL_SEC = 300.0
 
 # Hand / gateway may call these over HTTP.
 HTTP_TOOL_NAMES = frozenset(
@@ -68,11 +59,12 @@ def build_mcp(*, http: bool = False) -> MCPServer:
     if http:
         if not settings.http_bearer_token:
             raise RuntimeError("GMAIL_MCP_HTTP_BEARER_TOKEN is required for HTTP transport")
+        # Static bearer via connector headers only. Do not publish OAuth AS/PRM on the
+        # public internet — Hand Authenticate UI belongs behind Cloudflare Access later.
         public_base = http_public_base_url()
-        resource_url = AnyHttpUrl(f"{public_base.rstrip('/')}/mcp")
         auth = AuthSettings(
             issuer_url=public_base,
-            resource_server_url=resource_url,
+            resource_server_url=None,
         )
         mcp = MCPServer(
             "gmail-mcp",
@@ -84,126 +76,6 @@ def build_mcp(*, http: bool = False) -> MCPServer:
         mcp = MCPServer("gmail-mcp", version=VERSION)
 
     if http:
-
-        def _gc_auth_codes() -> None:
-            cutoff = time.time() - _AUTH_CODE_TTL_SEC
-            stale = [k for k, v in _AUTH_CODES.items() if float(v["created"]) < cutoff]
-            for k in stale:
-                _AUTH_CODES.pop(k, None)
-
-        def _client_secret_from_request(request: Request, form: dict) -> str | None:
-            secret = form.get("client_secret")
-            if secret:
-                return str(secret)
-            auth = request.headers.get("authorization", "")
-            if auth.lower().startswith("basic "):
-                try:
-                    decoded = base64.b64decode(auth.split(" ", 1)[1]).decode()
-                    return decoded.split(":", 1)[1] if ":" in decoded else decoded
-                except Exception:
-                    return None
-            return None
-
-        def _issue_bearer() -> JSONResponse:
-            return JSONResponse(
-                {
-                    "access_token": settings.http_bearer_token,
-                    "token_type": "Bearer",
-                    "expires_in": 86400,
-                }
-            )
-
-        @mcp.custom_route("/.well-known/oauth-authorization-server", methods=["GET"])
-        async def mcp_oauth_metadata(_request: Request) -> Response:
-            """AS metadata for Hand connector bootstrap (static bearer behind auth code)."""
-            return JSONResponse(
-                {
-                    "issuer": public_base,
-                    "authorization_endpoint": f"{public_base}/authorize",
-                    "token_endpoint": f"{public_base}/token",
-                    "registration_endpoint": f"{public_base}/register",
-                    "response_types_supported": ["code"],
-                    "grant_types_supported": ["authorization_code", "client_credentials"],
-                    "code_challenge_methods_supported": ["S256", "plain"],
-                    "token_endpoint_auth_methods_supported": [
-                        "client_secret_post",
-                        "client_secret_basic",
-                    ],
-                }
-            )
-
-        @mcp.custom_route("/register", methods=["POST"])
-        async def mcp_oauth_register(request: Request) -> Response:
-            """DCR stub — does NOT mint the bearer. Hand must use the pre-shared HTTP bearer."""
-            try:
-                body = await request.json()
-            except Exception:
-                body = {}
-            redirect_uris = body.get("redirect_uris") or []
-            return JSONResponse(
-                {
-                    "client_id": "gmail-mcp-hand",
-                    # Never return the real bearer via public DCR.
-                    "client_secret": "",
-                    "redirect_uris": redirect_uris,
-                    "grant_types": ["authorization_code", "client_credentials"],
-                    "response_types": ["code"],
-                    "token_endpoint_auth_method": "client_secret_post",
-                    "client_secret_expires_at": 0,
-                },
-                status_code=201,
-            )
-
-        @mcp.custom_route("/authorize", methods=["GET"])
-        async def mcp_oauth_authorize(request: Request) -> Response:
-            """No login UI — issue a one-time code; /token still requires the shared secret."""
-            if request.query_params.get("response_type", "code") != "code":
-                return PlainTextResponse("unsupported_response_type", status_code=400)
-            redirect_uri = request.query_params.get("redirect_uri")
-            if not redirect_uri:
-                return PlainTextResponse("missing redirect_uri", status_code=400)
-            state = request.query_params.get("state", "")
-            _gc_auth_codes()
-            code = secrets.token_urlsafe(24)
-            _AUTH_CODES[code] = {
-                "created": time.time(),
-                "redirect_uri": redirect_uri,
-            }
-            parts = urlsplit(redirect_uri)
-            q = dict(parse_qsl(parts.query, keep_blank_values=True))
-            q["code"] = code
-            if state:
-                q["state"] = state
-            target = urlunsplit(
-                (parts.scheme, parts.netloc, parts.path, urlencode(q), parts.fragment)
-            )
-            return RedirectResponse(target, status_code=302)
-
-        @mcp.custom_route("/token", methods=["POST"])
-        async def mcp_oauth_token(request: Request) -> Response:
-            """Issue configured bearer for authorization_code or client_credentials."""
-            form = dict(await request.form())
-            grant = form.get("grant_type")
-            if grant == "client_credentials":
-                secret = _client_secret_from_request(request, form)
-                if secret != settings.http_bearer_token:
-                    return JSONResponse({"error": "invalid_client"}, status_code=401)
-                return _issue_bearer()
-            if grant == "authorization_code":
-                # /authorize is public; redemption requires the pre-shared bearer as client_secret.
-                secret = _client_secret_from_request(request, form)
-                if secret != settings.http_bearer_token:
-                    return JSONResponse({"error": "invalid_client"}, status_code=401)
-                code = str(form.get("code") or "")
-                redirect_uri = str(form.get("redirect_uri") or "")
-                _gc_auth_codes()
-                pending = _AUTH_CODES.pop(code, None)
-                if not pending:
-                    return JSONResponse({"error": "invalid_grant"}, status_code=400)
-                if redirect_uri and redirect_uri != pending["redirect_uri"]:
-                    return JSONResponse({"error": "invalid_grant"}, status_code=400)
-                return _issue_bearer()
-            return JSONResponse({"error": "unsupported_grant_type"}, status_code=400)
 
         @mcp.custom_route("/oauth/callback", methods=["GET"])
         async def oauth_callback(request: Request) -> Response:
