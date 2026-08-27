@@ -59,10 +59,13 @@ def build_mcp(*, http: bool = False) -> MCPServer:
     if http:
         if not settings.http_bearer_token:
             raise RuntimeError("GMAIL_MCP_HTTP_BEARER_TOKEN is required for HTTP transport")
+        # Static bearer only. Do NOT publish Protected Resource Metadata
+        # (resource_server_url=None): Hand/Cursor then chase authorization_servers
+        # and ignore the configured Authorization header (known client bug).
         public_base = http_public_base_url()
         auth = AuthSettings(
             issuer_url=public_base,
-            resource_server_url=public_base,
+            resource_server_url=None,
         )
         mcp = MCPServer(
             "gmail-mcp",
