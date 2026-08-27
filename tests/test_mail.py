@@ -113,10 +113,17 @@ def test_body_only_is_plain():
 
 
 def test_message_id_uses_generic_domain():
-    # Forbidden hostnames stay outside the tree (env), so the guard does not
-    # publish the strings it is meant to block.
-    leak_host = os.environ.get("TEST_LEAK_HOST", "hosta")
-    leak_tailnet = os.environ.get("TEST_LEAK_TAILNET", "tailnetlabel")
+    # Real forbidden strings live outside the tree (env). Unset = skip locally;
+    # CI must set them or fail loudly (never a silent green).
+    leak_host = os.environ.get("TEST_LEAK_HOST")
+    leak_tailnet = os.environ.get("TEST_LEAK_TAILNET")
+    if not leak_host or not leak_tailnet:
+        if os.environ.get("CI") or os.environ.get("GITHUB_ACTIONS"):
+            pytest.fail(
+                "CI must set TEST_LEAK_HOST and TEST_LEAK_TAILNET "
+                "(outside the repo) or the leak-guard is inert"
+            )
+        pytest.skip("Set TEST_LEAK_HOST and TEST_LEAK_TAILNET to enable leak-guard")
     mime = build_mime(
         from_email="a@b.com",
         to=["c@d.com"],
