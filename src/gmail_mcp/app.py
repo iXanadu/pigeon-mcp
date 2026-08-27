@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import json
 
 from mcp.server.auth.settings import AuthSettings
@@ -79,15 +80,21 @@ def build_mcp(*, http: bool = False) -> MCPServer:
 
         @mcp.custom_route("/.well-known/oauth-authorization-server", methods=["GET"])
         async def mcp_oauth_metadata(_request: Request) -> Response:
-            """Minimal AS metadata — static bearer via client_credentials at /token."""
+            """AS metadata for static-bearer bootstrap — client_credentials only.
+
+            Do not advertise authorization_endpoint / response_types=code: Hand will
+            follow them to /authorize, which we do not implement.
+            """
             return JSONResponse(
                 {
                     "issuer": public_base,
-                    "authorization_endpoint": f"{public_base}/authorize",
                     "token_endpoint": f"{public_base}/token",
-                    "response_types_supported": ["code"],
                     "grant_types_supported": ["client_credentials"],
-                    "token_endpoint_auth_methods_supported": ["client_secret_post"],
+                    "token_endpoint_auth_methods_supported": [
+                        "client_secret_post",
+                        "client_secret_basic",
+                    ],
+                    "response_types_supported": [],
                 }
             )
 
@@ -97,7 +104,17 @@ def build_mcp(*, http: bool = False) -> MCPServer:
             form = await request.form()
             if form.get("grant_type") != "client_credentials":
                 return JSONResponse({"error": "unsupported_grant_type"}, status_code=400)
-            if form.get("client_secret") != settings.http_bearer_token:
+            secret = form.get("client_secret")
+            if not secret:
+                auth = request.headers.get("authorization", "")
+                if auth.lower().startswith("basic "):
+                    try:
+                        decoded = base64.b64decode(auth.split(" ", 1)[1]).decode()
+                        # client_id:client_secret
+                        secret = decoded.split(":", 1)[1] if ":" in decoded else decoded
+                    except Exception:
+                        secret = None
+            if secret != settings.http_bearer_token:
                 return JSONResponse({"error": "invalid_client"}, status_code=401)
             return JSONResponse(
                 {

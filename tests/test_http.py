@@ -50,7 +50,10 @@ async def test_http_401_advertises_mcp_resource_metadata(monkeypatch):
     assert well_known.status_code == 200
     assert well_known.json()["resource"] == "https://gmcp.example.com/mcp"
     assert auth_server.status_code == 200
-    assert "client_credentials" in auth_server.json()["grant_types_supported"]
+    meta = auth_server.json()
+    assert meta["grant_types_supported"] == ["client_credentials"]
+    assert "authorization_endpoint" not in meta
+    assert meta.get("response_types_supported") == []
     assert token.status_code == 200
     assert token.json()["access_token"] == settings.http_bearer_token
 
