@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>For agents — gmcp</title>
+  <meta name="description" content="gmcp is an MCP server for GrokBot and similar seats. Bearer auth, allow-listed tools, stage then send.">
+  <link rel="stylesheet" href="site.css">
+</head>
+<body>
+  <div class="w">
+    <header class="mast">
+      <div class="rail">
+        <b>gmcp</b>
+        <span>Self-hosted Gmail MCP</span>
+        <span class="sp">gmcp.c52.com</span>
+      </div>
+      <nav>
+        <a href="index.html">Overview</a>
+        <a href="how-it-works.html">How it works</a>
+        <a href="for-agents.html" aria-current="page">For agents</a>
+        <a href="https://github.com/iXanadu/gmcp">GitHub ↗</a>
+      </nav>
+    </header>
+
+    <h1>For agents</h1>
+    <p class="lede">One Streamable MCP endpoint, one bearer token, an allow-list shaped for Hand. You never need Cursor’s Gmail UI or a shell scp.</p>
+
+    <h2>Connect</h2>
+    <p>Add the connector with the public MCP URL and the static bearer the operator issued. Call <code>accounts_auth_start</code> when a mailbox is missing; hand the human the <code>auth_url</code>; wait for <code>accounts_list</code> to show the address.</p>
+
+    <h2>Send with a file</h2>
+    <pre><code># 1) Stage (same bearer as MCP)
+curl -sS -X POST \
+  "https://gmcp.example.com/outbox/stage?filename=report.pdf" \
+  -H "Authorization: Bearer $TOKEN" \
+  --data-binary @report.pdf
+
+# 2) MCP send with returned path in attachments_json
+# account=you@gmail.com  to=…  subject=…  body=…
+</code></pre>
+    <p class="m s">Cap is Gmail’s ~25&nbsp;MB. Filenames may include spaces and parentheses; path tricks are rejected.</p>
+
+    <h2>Rules of the road</h2>
+    <ul>
+      <li>Attachments are <strong>paths only</strong> — never base64 or inline <code>content</code> fields.</li>
+      <li>Every mail tool needs an <code>account</code> (the connected address).</li>
+      <li>Proof runs after send: sizes and hrefs; <code>ok: false</code> is a tool error.</li>
+      <li>Do not invent a second OAuth dance for the MCP transport — header bearer is the auth.</li>
+    </ul>
+
+    <h2>What you will not do</h2>
+    <ul class="plain">
+      <li>Open Cursor Gmail <span>Wrong product surface</span></li>
+      <li>scp to the operator’s laptop Outbox <span>Use <code>/outbox/stage</code></span></li>
+      <li>Paste refresh tokens into chat <span>Tokens stay on the server</span></li>
+    </ul>
+
+    <div class="row">
+      <a class="b" href="https://github.com/iXanadu/gmcp">Repo</a>
+      <a class="b b2" href="how-it-works.html">How it works</a>
+    </div>
+
+    <footer>
+      <span>Working name <b>gmcp</b> — better name TBD.</span>
+      <a href="privacy.html">Privacy</a>
+      <a href="terms.html">Terms</a>
+    </footer>
+  </div>
+</body>
+</html>

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>How it works — gmcp</title>
+  <meta name="description" content="OAuth, HTTP MCP, stage, send. How gmcp connects an agent seat to Gmail.">
+  <link rel="stylesheet" href="site.css">
+</head>
+<body>
+  <div class="w">
+    <header class="mast">
+      <div class="rail">
+        <b>gmcp</b>
+        <span>Self-hosted Gmail MCP</span>
+        <span class="sp">gmcp.c52.com</span>
+      </div>
+      <nav>
+        <a href="index.html">Overview</a>
+        <a href="how-it-works.html" aria-current="page">How it works</a>
+        <a href="for-agents.html">For agents</a>
+        <a href="https://github.com/iXanadu/gmcp">GitHub ↗</a>
+      </nav>
+    </header>
+
+    <h1>How it works</h1>
+    <p class="lede">Four surfaces: Google OAuth you own, an MCP HTTP endpoint, a stage upload for files, and Gmail itself.</p>
+
+    <ol class="steps">
+      <li>
+        <h3>You create the Google OAuth client</h3>
+        <p>Web application client, redirect <code>https://&lt;your-host&gt;/oauth/callback</code>. Publish the consent screen to <em>In production</em> (Testing refresh tokens die in seven days). Details in the OAuth guide.</p>
+      </li>
+      <li>
+        <h3>The agent connects a mailbox</h3>
+        <p>Hand calls <code>accounts_auth_start</code>, you open the returned URL, Allow the account. Tokens land on the server as <code>gmail-token-*.json</code>.</p>
+      </li>
+      <li>
+        <h3>Day-to-day mail over MCP</h3>
+        <p>Search, read, label, draft, send. HTTP requires <code>Authorization: Bearer …</code>. Account address is an argument on every mail tool.</p>
+      </li>
+      <li>
+        <h3>Attachments without scp</h3>
+        <p>Agent <code>POST</code>s bytes to <code>/outbox/stage</code> (same bearer), gets a path under the outbox root, then passes that path to <code>send</code> / <code>reply</code> / <code>forward</code>.</p>
+      </li>
+    </ol>
+
+    <h2>Public routes (typical gateway)</h2>
+    <ul class="plain">
+      <li><code>/mcp</code> <span>Streamable MCP — bearer required</span></li>
+      <li><code>/oauth/callback</code> <span>Google redirect — state + PKCE, no bearer</span></li>
+      <li><code>/outbox/stage</code> <span>Upload for later attach — bearer required</span></li>
+      <li><code>/healthz</code> <span>Unauthenticated liveness for watchdogs</span></li>
+      <li><code>/privacy</code> · <code>/terms</code> <span>Consent-screen URLs</span></li>
+    </ul>
+
+    <h2>Where files live</h2>
+    <p>Outbox and download roots are configurable. On a personal host, <code>/tmp/…</code> with <code>0700</code> self-heal on start is fine for transient staging. Tokens stay next to the service (or under a swept prod tree) — never in the agent transcript.</p>
+
+    <div class="row">
+      <a class="b" href="for-agents.html">For agents</a>
+      <a class="b b2" href="index.html">Overview</a>
+    </div>
+
+    <footer>
+      <span>Working name <b>gmcp</b> — better name TBD.</span>
+      <a href="privacy.html">Privacy</a>
+      <a href="terms.html">Terms</a>
+    </footer>
+  </div>
+</body>
+</html>
