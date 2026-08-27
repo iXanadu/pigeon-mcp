@@ -103,7 +103,7 @@ async def accounts_add_complete(code: str, state: str) -> dict[str, str]:
 
 
 async def accounts_remove(account: str) -> dict[str, str]:
-    """Drop a connected account's token. Best-effort revoke at Google."""
+    """Drop local token; best-effort Google revoke (see revoke_and_remove)."""
     removed = await revoke_and_remove(_store(), account)
     if not removed:
         raise ValueError(f"Unknown account: {account}")
