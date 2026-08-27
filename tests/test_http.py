@@ -24,8 +24,8 @@ async def test_http_without_bearer_returns_401(http_app):
     assert response.status_code == 401
 
 
-async def test_http_401_omits_resource_metadata(monkeypatch):
-    """Static-bearer servers must not advertise OAuth PRM — clients then ignore headers."""
+async def test_http_401_advertises_mcp_resource_metadata(monkeypatch):
+    """PRM must be path-scoped (/mcp); clients walk PRM → AS → /token."""
     monkeypatch.setattr(
         settings,
         "oauth_public_redirect_uri",
@@ -38,11 +38,21 @@ async def test_http_401_omits_resource_metadata(monkeypatch):
     transport = ASGITransport(app=app, raise_app_exceptions=False)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         response = await client.post("/mcp", json={"jsonrpc": "2.0", "method": "initialize", "id": 1})
-        well_known = await client.get("/.well-known/oauth-protected-resource")
+        well_known = await client.get("/.well-known/oauth-protected-resource/mcp")
+        auth_server = await client.get("/.well-known/oauth-authorization-server")
+        token = await client.post(
+            "/token",
+            data={"grant_type": "client_credentials", "client_secret": settings.http_bearer_token},
+        )
     assert response.status_code == 401
     www = response.headers.get("www-authenticate", "")
-    assert "resource_metadata=" not in www
-    assert well_known.status_code == 404
+    assert "/oauth-protected-resource/mcp" in www
+    assert well_known.status_code == 200
+    assert well_known.json()["resource"] == "https://gmcp.example.com/mcp"
+    assert auth_server.status_code == 200
+    assert "client_credentials" in auth_server.json()["grant_types_supported"]
+    assert token.status_code == 200
+    assert token.json()["access_token"] == settings.http_bearer_token
 
 
 async def test_oauth_callback_rejects_bad_state(http_app):
