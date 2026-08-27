@@ -2,13 +2,13 @@
 
 This is the connector Cursor should have written. Gmail only. Share is done and out of scope.
 
-Hand (and Inbox) have to talk to any Gmail account the operator adds: today Work, Team, Personal; tomorrow a fourth without a code change.
+Hand (and Inbox) have to talk to any Gmail account the operator adds: a consumer Gmail, a Workspace Gmail, a third — tomorrow a fourth without a code change.
 
 Do not wrap `https://gmailmcp.googleapis.com/mcp/v1`. That host is what chopped a 140 KB PDF to a 3 KB stub and rewrote every live href to `https://www.google.com/url?q=...`. There is no repo to patch. Replace the send path.
 
 ## Auth: OAuth. Not password.
 
-Google does not let a normal Gmail login (user + password) hit the Gmail API. App passwords are IMAP-only, weaker, and still not "any account." Domain-wide service accounts only cover a Workspace you admin, not `robert.pickles@gmail.com`.
+Google does not let a normal Gmail login (user + password) hit the Gmail API. App passwords are IMAP-only, weaker, and still not "any account." Domain-wide service accounts only cover a Workspace you admin, not a personal `@gmail.com`.
 
 Use Google OAuth 2.0 with a refresh token (offline access). One Desktop OAuth client the operator owns. Each Gmail identity is a separate consent. Tokens live on the MCP host, mode 0600, never in chat, never in a tool argument.
 
@@ -60,9 +60,9 @@ Never rewrite a URL. Never wrap `google.com/url`. Never "linkify." If the caller
 
 From is the connected account. No From spoof.
 
-Signatures: use them. The operator writes them in Gmail settings. Gmail's send API will not apply them for you. At send time, GET that account's send-as record (`users.settings.sendAs`) and append whatever is there now (HTML signature onto the HTML part, plain onto the plain part). Do not keep a copy on disk or in Hand. A stored paste is how he fixed a signature and still saw the old one.
+Signatures: use them. The operator writes them in Gmail settings. Gmail's send API will not apply them for you. At send time, GET that account's send-as record (`users.settings.sendAs`) and append whatever is there now (HTML signature onto the HTML part, plain onto the plain part). Do not keep a copy on disk or in Hand. A stored paste is how a signature change still showed the old one.
 
-After the live signature, add one line: `Sent by Hand, the operator's assistant.`
+After the live signature, add a caller-supplied footer (Hand passes its own; default is empty).
 
 If send-as has no signature, send without one. Do not invent a KW / phone / social block.
 
@@ -81,7 +81,7 @@ If `ok` is false, the tool errors. Do not report a successful send.
 
 Every tool except `accounts.list` and `accounts.add` takes `account` (the Gmail address). Wrong account is a hard error, not a guess.
 
-Adding Work, Team, Personal, or a fourth is OAuth, not a deploy. One server, N tokens.
+Adding another mailbox is OAuth, not a deploy. One server, N tokens.
 
 `accounts.list` returns the connected addresses and whether the refresh token still works.
 
@@ -120,7 +120,7 @@ Refresh tokens silently. If Google returns `invalid_grant`, that account is `nee
 
 ## Acceptance (do not ship without)
 
-Run these against two real boxes the operator names (Work → Personal is enough).
+Run these against two real mailboxes the operator names (consumer → Workspace is enough).
 
 1. `accounts.add` for a consumer Gmail and a Workspace Gmail. Both show up in `accounts.list`.
 2. Send a ≥140 KB PDF from account A to account B. B receives that filename. Size matches. Sent `sizeEstimate` is not a stub.
@@ -136,7 +136,7 @@ If 2, 3, or 8 fail, it is not done. 2 and 3 are the Cursor connector. 8 is the s
 ## Out of scope
 
 - Share. It works. Do not put Share tools in this server.
-- AgentMail. Different MTA. Not the operator's three boxes.
+- AgentMail. Different MTA. Not the operator's Gmail boxes.
 - A second plugin pointed at Google's hosted Gmail MCP.
 - IMAP, passwords, app passwords.
 - Caching a signature and pasting it later. Read it live or skip it.
@@ -144,4 +144,4 @@ If 2, 3, or 8 fail, it is not done. 2 and 3 are the Cursor connector. 8 is the s
 
 ## Done looks like
 
-Hand says send on any connected Gmail. The counterpart gets the operator, from that box, on that thread, with the signature that is in Gmail right now. The file opens. The link goes where we wrote it. Sent mail matches. A new Gmail is one OAuth, not a rewrite.
+Hand says send on any connected Gmail. The counterpart gets mail from that box, on that thread, with the signature that is in Gmail right now. The file opens. The link goes where we wrote it. Sent mail matches. A new Gmail is one OAuth, not a rewrite.
