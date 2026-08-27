@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 import sys
-from pathlib import Path
 
-from gmail_mcp.config import settings
+from gmail_mcp.config import ensure_data_dirs, settings
 
 PASS, WARN, FAIL = "PASS", "WARN", "FAIL"
 
@@ -19,29 +18,16 @@ def run() -> int:
 
     results.append(_line(PASS, f"Package import ok; environment={settings.environment}."))
 
+    ensure_data_dirs()
+
     outbox = settings.outbox_root.expanduser()
-    if outbox.is_dir():
-        results.append(_line(PASS, f"Outbox root exists: {outbox}."))
-    else:
-        results.append(
-            _line(
-                WARN,
-                f"Outbox root missing: {outbox}.",
-                f"mkdir -p {outbox} — attachments are only accepted from this tree.",
-            )
-        )
+    results.append(_line(PASS, f"Outbox root ready: {outbox}."))
+
+    download = settings.download_root.expanduser()
+    results.append(_line(PASS, f"Download root ready: {download}."))
 
     tokens = settings.tokens_dir.expanduser()
-    if tokens.is_dir():
-        results.append(_line(PASS, f"Tokens dir exists: {tokens}."))
-    else:
-        results.append(
-            _line(
-                WARN,
-                f"Tokens dir missing: {tokens}.",
-                f"mkdir -p {tokens} && chmod 700 {tokens.parent}",
-            )
-        )
+    results.append(_line(PASS, f"Tokens dir ready: {tokens}."))
 
     if settings.google_client_id and settings.google_client_secret:
         results.append(_line(PASS, "Google OAuth client credentials loaded."))

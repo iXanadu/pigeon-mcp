@@ -14,7 +14,7 @@ gmail-mcp/
 ├── tests/
 ├── scripts/          # start/stop/restart, resolve-venv-python
 ├── docs/specs/       # product spec
-├── examples/         # .env.example / .keys.example
+├── examples/         # config.example / secrets.example
 ├── .env              # non-secret (not committed)
 ├── .keys             # secrets (not committed)
 └── pyproject.toml    # entrypoints: gmail-mcp, gmail-mcp-http, gmail-doctor
@@ -34,7 +34,7 @@ gmail-doctor
 - Python: pyenv + pyenv-virtualenv (not `python -m venv`). Venv name: `gmail-mcp-3.13`.
 - No database. Tokens are `gmail-token-*.json` under `GMAIL_MCP_TOKENS_DIR` (default `~/.config/gmail-mcp/tokens`), mode 0640.
 - Attachments only from outbox root (default `~/Outbox`).
-- Public surface is `/mcp` only. No public OAuth callback route (Desktop client + loopback).
+- Public routes: `/mcp`, `/oauth/callback`, `/outbox/stage`, `GET /healthz`
 
 ## Deployment Workflow
 1. Work locally, commit, push
@@ -42,5 +42,7 @@ gmail-doctor
 3. Record any post-pull host actions for the next operator session
 
 ## Reference Docs
-- `README.md` — install, Google Console, headless OAuth patterns
+- `README.md` — install, quick OAuth checklist
+- `docs/google-oauth-setup.md` — scopes, consent screen, Testing trap, legal URLs
+- `docs/legal/` — Privacy + Terms (repo copies; live on gmcp.c52.com)
 - `docs/specs/gmail-mcp-spec.md` — acceptance criteria

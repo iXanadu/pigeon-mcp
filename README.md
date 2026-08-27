@@ -9,13 +9,13 @@ Gmail connector for MCP clients. One server, many Gmail accounts via OAuth refre
 - **Multi-account OAuth** — add mailboxes with `accounts_add`; tokens stored as `gmail-token-*.json` (mode 0640)
 - **Send / reply / forward** — server-built MIME, outbox file paths only, 25 MB cap, idempotency keys, proof on success
 - **Read / organise** — search (threads + pagination), get thread/message, labels, archive/trash, drafts
-- **Attachments** — send from `~/Outbox` (configurable); download to `~/Inbox` (configurable)
+- **Attachments** — send from configured outbox root (default `~/Outbox`); stage via `POST /outbox/stage` (bearer); download to configured download root (default `~/Inbox`)
 - **Dual transport** — stdio for local harnesses; Streamable HTTP behind a gateway for remote clients
 
 ## Requirements
 
 - Python 3.12+ (development uses 3.13 via pyenv)
-- Google Cloud **Desktop** OAuth client (client id + secret)
+- Google Cloud **Web application** OAuth client (Hand / HTTP consent via public callback)
 - macOS for the included LaunchAgent scripts (HTTP service); Linux works for manual runs
 
 ## Quick start
@@ -30,8 +30,8 @@ pyenv local gmail-mcp-3.13
 pip install -e '.[dev]'
 
 # Config (see examples/)
-cp examples/.env.example .env
-cp examples/.keys.example .keys
+cp examples/config.example .env
+cp examples/secrets.example .keys
 chmod 600 .keys
 
 # Sanity check
@@ -42,23 +42,39 @@ Fill in `.keys` with your Google OAuth credentials and an HTTP bearer token befo
 
 ### Google Cloud Console (one-time)
 
-You need a **Desktop OAuth client** — not a service account, not domain-wide delegation.
+Hand over HTTP needs a **Web application** OAuth client with redirect
+`https://<your-host>/oauth/callback`. Optional **Desktop** client is only for
+local stdio `accounts_add` (`http://127.0.0.1:8767/oauth/callback`).
+
+**Full guide** (scopes, the unverified-app warning, Workspace vs personal Gmail,
+the 7-day Testing trap, token protection, legal URLs):
+[`docs/google-oauth-setup.md`](docs/google-oauth-setup.md)
+
+Quick checklist:
 
 | Step | Where | What |
 | --- | --- | --- |
 | 1 | APIs & Services → Library | Enable **Gmail API** |
-| 2 | OAuth consent screen | **External** is fine for personal use. Add your Google account as a **Test user** while the app is in Testing mode. |
-| 3 | Credentials → Create | **OAuth client ID → Desktop app** |
-| 4 | Client settings | Add redirect URI **`http://127.0.0.1:8767/oauth/callback`** (must match `GMAIL_MCP_OAUTH_REDIRECT_URI` in `.env`) |
-| 5 | `.keys` | Paste **Client ID** and **Client secret** as `GMAIL_MCP_GOOGLE_CLIENT_ID` / `GMAIL_MCP_GOOGLE_CLIENT_SECRET` |
+| 2 | OAuth consent screen | **External** → **Publish app** (*In production*). Do **not** stay in Testing (7-day refresh expiry). See the doc for Workspace **Internal**. |
+| 3 | Credentials → Create | **OAuth client ID → Web application** |
+| 4 | Web client | Redirect **`https://<your-host>/oauth/callback`** → `GMAIL_MCP_OAUTH_PUBLIC_REDIRECT_URI` |
+| 5 | `.keys` | Web client id/secret → `GMAIL_MCP_GOOGLE_WEB_CLIENT_ID` / `_SECRET` (see `examples/secrets.example`) |
 
-On first `accounts_add`, Google asks for consent. Scopes are fixed in the server: read/send/organise mail plus read send-as signature (not cached).
+Privacy / Terms URLs for the consent screen: [`docs/legal/`](docs/legal/README.md)
+(c52.com live: `https://gmcp.c52.com/privacy`, `https://gmcp.c52.com/terms`).
+
+On first connect, Google asks for consent. Scopes are fixed in the server: read/send/organise mail plus read send-as signature (not cached).
 
 **No** username/password, app password, or pasted refresh token in chat.
 
-### Connect a mailbox (`accounts_add`)
+### Connect a mailbox
 
-`accounts_add` opens a **browser** for Google consent. It only runs on the **stdio** transport (`gmail-mcp`), not over HTTP.
+**Hand / HTTP (recommended):** call `accounts_auth_start`, open the returned
+`auth_url` in a browser, complete consent — the public `/oauth/callback` route
+finishes automatically. Then `accounts_list` over HTTP.
+
+**Local stdio only:** `accounts_add` opens a browser for Google consent. It runs
+on the **stdio** transport (`gmail-mcp`), not over HTTP.
 
 ```bash
 gmail-mcp   # stdio — required for accounts_add and accounts_remove
@@ -112,7 +128,7 @@ After deploy: `gmail-doctor`, `./scripts/start.sh` (macOS LaunchAgent) or your o
 
 ## Configuration
 
-Non-sensitive settings live in `.env`; secrets in `.keys` (never commit either when populated). See `examples/.env.example` and `examples/.keys.example`.
+Non-sensitive settings live in `.env`; secrets in `.keys` (never commit either when populated). Templates: `examples/config.example` and `examples/secrets.example`.
 
 | Variable | File | Purpose |
 | --- | --- | --- |
@@ -120,12 +136,15 @@ Non-sensitive settings live in `.env`; secrets in `.keys` (never commit either w
 | `GMAIL_MCP_LOG_LEVEL` | `.env` | Server log level |
 | `GMAIL_MCP_HTTP_HOST` | `.env` | HTTP bind address (default `127.0.0.1`) |
 | `GMAIL_MCP_HTTP_PORT` | `.env` | HTTP port (default `8879`) |
-| `GMAIL_MCP_OUTBOX_ROOT` | `.env` | Root for send attachment paths |
-| `GMAIL_MCP_DOWNLOAD_ROOT` | `.env` | Root for `get_attachment` writes |
+| `GMAIL_MCP_OUTBOX_ROOT` | `.env` | Send/stage attachment paths (pick per machine; `/tmp/...` fine on personal hosts) |
+| `GMAIL_MCP_DOWNLOAD_ROOT` | `.env` | `get_attachment` writes |
 | `GMAIL_MCP_TOKENS_DIR` | `.env` | OAuth token storage directory |
-| `GMAIL_MCP_OAUTH_REDIRECT_URI` | `.env` | OAuth loopback callback |
-| `GMAIL_MCP_GOOGLE_CLIENT_ID` | `.keys` | Google OAuth client id |
-| `GMAIL_MCP_GOOGLE_CLIENT_SECRET` | `.keys` | Google OAuth client secret |
+| `GMAIL_MCP_OAUTH_REDIRECT_URI` | `.env` | OAuth loopback callback (stdio Desktop client) |
+| `GMAIL_MCP_OAUTH_PUBLIC_REDIRECT_URI` | `.env` | Public HTTPS callback (Web client / Hand) |
+| `GMAIL_MCP_GOOGLE_WEB_CLIENT_ID` | `.keys` | Google Web OAuth client id |
+| `GMAIL_MCP_GOOGLE_WEB_CLIENT_SECRET` | `.keys` | Google Web OAuth client secret |
+| `GMAIL_MCP_GOOGLE_CLIENT_ID` | `.keys` | Optional Desktop client (stdio) |
+| `GMAIL_MCP_GOOGLE_CLIENT_SECRET` | `.keys` | Optional Desktop client secret |
 | `GMAIL_MCP_HTTP_BEARER_TOKEN` | `.keys` | Bearer token for HTTP transport |
 
 Run `gmail-doctor` after changing config.
@@ -150,7 +169,18 @@ gmail-mcp-http
 
 Binds `127.0.0.1:8879` by default. Requires `Authorization: Bearer <GMAIL_MCP_HTTP_BEARER_TOKEN>`; requests without a valid token get **401**.
 
-**Hand allow-list** (HTTP only): read/organise tools plus `send`, `reply`, `forward`, `draft_create`, `draft_send`, `accounts_list`, and `gmail_status`. Account management stays on stdio.
+**Hand allow-list** (HTTP only): read/organise tools plus `send`, `reply`, `forward`, `draft_create`, `draft_send`, `accounts_list`, `accounts_auth_start`, and `gmail_status`. Account management (`accounts_add` / `accounts_remove`) stays on stdio.
+
+**Stage attachments for Hand** (no scp required):
+
+```bash
+curl -sS -X POST "https://gmcp.c52.com/outbox/stage?filename=deed.pdf" \
+  -H "Authorization: Bearer $GMAIL_MCP_HTTP_BEARER_TOKEN" \
+  --data-binary @deed.pdf
+# → {"path":".../deed.pdf","filename":"deed.pdf","size":N,...}
+```
+
+Then call `send` / `reply` / `forward` with `attachments_json` using that `path`. Proxy must expose `/outbox/stage` (same bearer as `/mcp`). Cap: 25 MB.
 
 #### macOS service (user LaunchAgent)
 
@@ -185,6 +215,7 @@ Every tool except `accounts_list`, `accounts_add`, and `gmail_status` requires a
 
 ## Send rules (summary)
 
+- Stage remote files first: `POST /outbox/stage` (bearer) → use returned `path`
 - Attachments: `{ "path": "/absolute/or/under/outbox/file.pdf" }` — no inline base64
 - Live Gmail signature appended at send time (not cached)
 - Optional `footer` after signature
