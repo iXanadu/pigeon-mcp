@@ -25,7 +25,7 @@ async def test_http_without_bearer_returns_401(http_app):
 
 
 async def test_http_401_advertises_mcp_resource_metadata(monkeypatch):
-    """PRM must be path-scoped (/mcp); clients walk PRM → AS → /token."""
+    """PRM must be path-scoped (/mcp); clients walk PRM → AS → authorize → /token."""
     monkeypatch.setattr(
         settings,
         "oauth_public_redirect_uri",
@@ -36,14 +36,37 @@ async def test_http_401_advertises_mcp_resource_metadata(monkeypatch):
         host=settings.http_host,
     )
     transport = ASGITransport(app=app, raise_app_exceptions=False)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
+    async with AsyncClient(transport=transport, base_url="http://test", follow_redirects=False) as client:
         response = await client.post("/mcp", json={"jsonrpc": "2.0", "method": "initialize", "id": 1})
         well_known = await client.get("/.well-known/oauth-protected-resource/mcp")
         auth_server = await client.get("/.well-known/oauth-authorization-server")
+        authorize = await client.get(
+            "/authorize",
+            params={
+                "response_type": "code",
+                "redirect_uri": "https://hand.example/cb",
+                "state": "xyz",
+            },
+        )
+        assert authorize.status_code == 302
+        loc = authorize.headers["location"]
+        assert "code=" in loc and "state=xyz" in loc
+        from urllib.parse import parse_qs, urlsplit
+
+        code = parse_qs(urlsplit(loc).query)["code"][0]
         token = await client.post(
+            "/token",
+            data={
+                "grant_type": "authorization_code",
+                "code": code,
+                "redirect_uri": "https://hand.example/cb",
+            },
+        )
+        cc = await client.post(
             "/token",
             data={"grant_type": "client_credentials", "client_secret": settings.http_bearer_token},
         )
+        reg = await client.post("/register", json={"redirect_uris": ["https://hand.example/cb"]})
     assert response.status_code == 401
     www = response.headers.get("www-authenticate", "")
     assert "/oauth-protected-resource/mcp" in www
@@ -51,11 +74,13 @@ async def test_http_401_advertises_mcp_resource_metadata(monkeypatch):
     assert well_known.json()["resource"] == "https://gmcp.example.com/mcp"
     assert auth_server.status_code == 200
     meta = auth_server.json()
-    assert meta["grant_types_supported"] == ["client_credentials"]
-    assert "authorization_endpoint" not in meta
-    assert meta.get("response_types_supported") == []
+    assert meta["authorization_endpoint"].endswith("/authorize")
+    assert "authorization_code" in meta["grant_types_supported"]
     assert token.status_code == 200
     assert token.json()["access_token"] == settings.http_bearer_token
+    assert cc.status_code == 200
+    assert reg.status_code == 201
+    assert reg.json()["client_secret"] == settings.http_bearer_token
 
 
 async def test_oauth_callback_rejects_bad_state(http_app):
