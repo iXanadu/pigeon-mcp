@@ -1,4 +1,4 @@
-# Marketing site (gmcp)
+# Marketing site (pigeon)
 
 Cousin layout to [Share](https://share.c52.com/) (`file-share/web/marketing`).
 
@@ -10,7 +10,7 @@ Cousin layout to [Share](https://share.c52.com/) (`file-share/web/marketing`).
 | `privacy.html` / `terms.html` | Consent-screen HTML (source also in `docs/legal/`) |
 | `site.css` | Shared visual language with Share |
 
-**Working product name:** `gmcp` (better name TBD — do not bike-shed in this folder).
+**Working product name:** `pigeon` (better name TBD — do not bike-shed in this folder).
 
 ## Deploy (prod-host)
 

@@ -1,38 +1,38 @@
-# gmail-mcp
+# pigeon-mcp
 
 ## Project Overview
 Gmail connector for MCP: one tool module, two transports (stdio for local harnesses, Streamable HTTP behind a gateway for remote clients). OAuth refresh-token auth, N Gmail identities, server-built MIME, file-path attachments, live signatures.
 
-**READ FIRST:** `docs/specs/gmail-mcp-spec.md` (acceptance criteria), then `README.md` (operator setup).
+**READ FIRST:** `docs/specs/pigeon-mcp-spec.md` (acceptance criteria), then `README.md` (operator setup).
 
 ## Project Structure
 ```
-gmail-mcp/
+pigeon-mcp/
 ├── AGENTS.md
 ├── CLAUDE.md         # symlink -> AGENTS.md
-├── src/gmail_mcp/    # MCP server, config, doctor
+├── src/pigeon_mcp/    # MCP server, config, doctor
 ├── tests/
 ├── scripts/          # start/stop/restart, resolve-venv-python
 ├── docs/specs/       # product spec
 ├── examples/         # config.example / secrets.example
 ├── .env              # non-secret (not committed)
 ├── .keys             # secrets (not committed)
-└── pyproject.toml    # entrypoints: gmail-mcp, gmail-mcp-http, gmail-doctor
+└── pyproject.toml    # entrypoints: pigeon-mcp, pigeon-mcp-http, pigeon-doctor
 ```
 
 ## Commands
 ```bash
-pyenv virtualenv 3.13 gmail-mcp-3.13
-pyenv local gmail-mcp-3.13
+pyenv virtualenv 3.13 pigeon-mcp-3.13
+pyenv local pigeon-mcp-3.13
 pip install -e '.[dev]'
 pytest tests/ -v
-gmail-doctor
+pigeon-doctor
 ```
 
 ## Conventions
-- Config: `.env` (non-sensitive) + `.keys` (secrets, never commit). Prefix `GMAIL_MCP_`.
-- Python: pyenv + pyenv-virtualenv (not `python -m venv`). Venv name: `gmail-mcp-3.13`.
-- No database. Tokens are `gmail-token-*.json` under `GMAIL_MCP_TOKENS_DIR` (default `~/.config/gmail-mcp/tokens`), mode 0640.
+- Config: `.env` (non-sensitive) + `.keys` (secrets, never commit). Prefix `PIGEON_MCP_`.
+- Python: pyenv + pyenv-virtualenv (not `python -m venv`). Venv name: `pigeon-mcp-3.13`.
+- No database. Tokens are `gmail-token-*.json` under `PIGEON_MCP_TOKENS_DIR` (default `~/.config/pigeon-mcp/tokens`), mode 0640.
 - Attachments only from outbox root (default `~/Outbox`).
 - Public routes: `/mcp`, `/oauth/callback`, `/outbox/stage`, `GET /healthz`
 
@@ -44,5 +44,5 @@ gmail-doctor
 ## Reference Docs
 - `README.md` — install, quick OAuth checklist
 - `docs/google-oauth-setup.md` — scopes, consent screen, Testing trap, legal URLs
-- `docs/legal/` — Privacy + Terms (repo copies; live on gmcp.c52.com)
-- `docs/specs/gmail-mcp-spec.md` — acceptance criteria
+- `docs/legal/` — Privacy + Terms (repo copies; live on pigeon.c52.com)
+- `docs/specs/pigeon-mcp-spec.md` — acceptance criteria

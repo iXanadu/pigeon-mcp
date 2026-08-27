@@ -1,6 +1,6 @@
 # Rename to .python-version after creating your pyenv virtualenv:
 #
-#   pyenv virtualenv 3.13 gmail-mcp-3.13
-#   pyenv local gmail-mcp-3.13
+#   pyenv virtualenv 3.13 pigeon-mcp-3.13
+#   pyenv local pigeon-mcp-3.13
 #
-gmail-mcp-3.13
+pigeon-mcp-3.13

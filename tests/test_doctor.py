@@ -4,8 +4,8 @@ import os
 from pathlib import Path
 from unittest.mock import patch
 
-from gmail_mcp import doctor
-from gmail_mcp.config import settings as cfg
+from pigeon_mcp import doctor
+from pigeon_mcp.config import settings as cfg
 
 
 def test_doctor_warns_without_oauth(tmp_path, capsys):
@@ -42,9 +42,9 @@ def test_ensure_data_dirs_recreates_tmp_tree(tmp_path, monkeypatch):
     import shutil
     import stat
 
-    from gmail_mcp.config import ensure_data_dirs, settings
+    from pigeon_mcp.config import ensure_data_dirs, settings
 
-    real = Path("/tmp") / f"gmcp-test-{os.getpid()}"
+    real = Path("/tmp") / f"pigeon-test-{os.getpid()}"
     try:
         monkeypatch.setattr(settings, "outbox_root", real / "Outbox")
         monkeypatch.setattr(settings, "download_root", real / "Inbox")
@@ -63,16 +63,16 @@ def test_ensure_data_dirs_repairs_preexisting_755(monkeypatch):
     import shutil
     import stat
 
-    from gmail_mcp.config import ensure_data_dirs, settings
+    from pigeon_mcp.config import ensure_data_dirs, settings
 
-    real = Path("/tmp") / f"gmcp-test755-{os.getpid()}"
+    real = Path("/tmp") / f"pigeon-test755-{os.getpid()}"
     try:
         real.mkdir(mode=0o755)
         (real / "Outbox").mkdir(mode=0o755)
         (real / "Inbox").mkdir(mode=0o755)
         monkeypatch.setattr(settings, "outbox_root", real / "Outbox")
         monkeypatch.setattr(settings, "download_root", real / "Inbox")
-        monkeypatch.setattr(settings, "tokens_dir", Path("/tmp") / f"gmcp-tok-{os.getpid()}")
+        monkeypatch.setattr(settings, "tokens_dir", Path("/tmp") / f"pigeon-tok-{os.getpid()}")
         ensure_data_dirs()
         assert stat.S_IMODE((real / "Outbox").stat().st_mode) == 0o700
         assert stat.S_IMODE(real.stat().st_mode) == 0o700
@@ -80,4 +80,4 @@ def test_ensure_data_dirs_repairs_preexisting_755(monkeypatch):
         assert stat.S_IMODE((real / "Outbox").stat().st_mode) == 0o700
     finally:
         shutil.rmtree(real, ignore_errors=True)
-        shutil.rmtree(Path("/tmp") / f"gmcp-tok-{os.getpid()}", ignore_errors=True)
+        shutil.rmtree(Path("/tmp") / f"pigeon-tok-{os.getpid()}", ignore_errors=True)

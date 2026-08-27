@@ -1,6 +1,6 @@
 """Smoke tests for the scaffolded MCP server."""
 
-from gmail_mcp.app import HTTP_TOOL_NAMES, VERSION, build_mcp
+from pigeon_mcp.app import HTTP_TOOL_NAMES, VERSION, build_mcp
 
 
 async def test_version():
@@ -12,7 +12,7 @@ async def test_gmail_status():
     tools = {t.name: t for t in mcp._tool_manager.list_tools()}
     assert "gmail_status" in tools
     result = await tools["gmail_status"].fn()
-    assert "gmail-mcp" in result
+    assert "pigeon-mcp" in result
     assert "accounts:" in result
 
 

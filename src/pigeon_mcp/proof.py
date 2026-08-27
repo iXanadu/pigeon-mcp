@@ -8,8 +8,8 @@ from email import message_from_bytes
 from email import policy as email_policy
 from typing import Any
 
-from gmail_mcp.attachments import ResolvedAttachment
-from gmail_mcp.gmail_client import (
+from pigeon_mcp.attachments import ResolvedAttachment
+from pigeon_mcp.gmail_client import (
     get_attachment_bytes,
     get_message,
     get_message_raw,

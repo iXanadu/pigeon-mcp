@@ -5,8 +5,8 @@ import httpx
 import pytest
 import respx
 
-from gmail_mcp.config import settings
-from gmail_mcp.inbox import (
+from pigeon_mcp.config import settings
+from pigeon_mcp.inbox import (
     archive,
     draft_create,
     draft_send,
@@ -16,8 +16,8 @@ from gmail_mcp.inbox import (
     search,
     trash,
 )
-from gmail_mcp.oauth_constants import STATUS_ACTIVE
-from gmail_mcp.token_store import AccountToken, TokenStore
+from pigeon_mcp.oauth_constants import STATUS_ACTIVE
+from pigeon_mcp.token_store import AccountToken, TokenStore
 
 GMAIL = "https://gmail.googleapis.com/gmail/v1"
 
@@ -83,7 +83,7 @@ async def test_get_attachment_writes_file(inbox_env):
 
 
 def test_get_attachment_rejects_outside_download_root(inbox_env):
-    from gmail_mcp.attachments import resolve_download_path
+    from pigeon_mcp.attachments import resolve_download_path
 
     outside = inbox_env["downloads"].parent / "escape.bin"
     with pytest.raises(ValueError, match="download root"):
@@ -142,8 +142,8 @@ async def test_get_message_plain_body(inbox_env):
 @respx.mock
 async def test_draft_send_with_proof(inbox_env, monkeypatch):
     monkeypatch.setattr(
-        "gmail_mcp.inbox._idempotency_store",
-        lambda: __import__("gmail_mcp.idempotency", fromlist=["IdempotencyStore"]).IdempotencyStore(
+        "pigeon_mcp.inbox._idempotency_store",
+        lambda: __import__("pigeon_mcp.idempotency", fromlist=["IdempotencyStore"]).IdempotencyStore(
             inbox_env["idem_path"]
         ),
     )

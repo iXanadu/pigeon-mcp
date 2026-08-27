@@ -1,7 +1,7 @@
 # Privacy Policy
 
 **GrokBot Gmail MCP** — private integration operated by the owner of the deployment
-hostname (published at `https://gmcp.c52.com/privacy` for c52.com).
+hostname (published at `https://pigeon.c52.com/privacy` for c52.com).
 
 ## Scope
 

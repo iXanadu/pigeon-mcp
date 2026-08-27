@@ -5,8 +5,8 @@ from __future__ import annotations
 import sys
 from dataclasses import dataclass
 
-from gmail_mcp.config import settings
-from gmail_mcp.google_oauth import (
+from pigeon_mcp.config import settings
+from pigeon_mcp.google_oauth import (
     build_auth_url,
     complete_oauth,
     ensure_fresh_token,
@@ -14,8 +14,8 @@ from gmail_mcp.google_oauth import (
     take_pending,
     web_client_credentials,
 )
-from gmail_mcp.oauth_constants import STATUS_ACTIVE, STATUS_NEEDS_AUTH
-from gmail_mcp.token_store import TokenStore
+from pigeon_mcp.oauth_constants import STATUS_ACTIVE, STATUS_NEEDS_AUTH
+from pigeon_mcp.token_store import TokenStore
 
 
 @dataclass
@@ -46,7 +46,7 @@ async def accounts_list() -> list[dict[str, str]]:
 
 async def accounts_add() -> dict[str, str]:
     """Start Google OAuth, wait for browser consent, return the Gmail address."""
-    from gmail_mcp.oauth_callback import run_callback_server
+    from pigeon_mcp.oauth_callback import run_callback_server
 
     redirect_uri = settings.oauth_redirect_uri
     auth_url, state = build_auth_url(redirect_uri)
@@ -66,7 +66,7 @@ async def accounts_auth_start() -> dict[str, str]:
     redirect_uri = settings.oauth_public_redirect_uri.strip()
     if not redirect_uri:
         raise RuntimeError(
-            "GMAIL_MCP_OAUTH_PUBLIC_REDIRECT_URI is required for Hand-initiated OAuth "
+            "PIGEON_MCP_OAUTH_PUBLIC_REDIRECT_URI is required for Hand-initiated OAuth "
             "(set it to your public https://…/oauth/callback)"
         )
     client_id, client_secret = web_client_credentials()

@@ -1,15 +1,15 @@
 #!/bin/bash
-# Start gmail-mcp HTTP service (user LaunchAgent).
+# Start pigeon-mcp HTTP service (user LaunchAgent).
 #
 # Usage:
 #   ./scripts/start.sh
 
 set -euo pipefail
 
-LABEL="com.gmail-mcp"
+LABEL="com.pigeon-mcp"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 APP_DIR="$(dirname "$SCRIPT_DIR")"
-PLIST_SRC="$APP_DIR/launchd/com.gmail-mcp.plist"
+PLIST_SRC="$APP_DIR/launchd/com.pigeon-mcp.plist"
 PLIST_DEST="$HOME/Library/LaunchAgents/${LABEL}.plist"
 
 if [[ "$(uname)" != "Darwin" ]]; then
@@ -20,7 +20,7 @@ fi
 mkdir -p "$APP_DIR/logs"
 
 PF_PY="$("$SCRIPT_DIR/resolve-venv-python.sh" python)"
-if ! (cd "$APP_DIR" && "$PF_PY" -m gmail_mcp.doctor); then
+if ! (cd "$APP_DIR" && "$PF_PY" -m pigeon_mcp.doctor); then
     echo
     echo "Doctor reported warnings — fix before production. Continuing for local dev."
 fi

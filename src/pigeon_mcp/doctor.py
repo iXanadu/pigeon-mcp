@@ -1,10 +1,10 @@
-"""gmail-mcp doctor — config sanity check before wiring Gmail OAuth."""
+"""pigeon-mcp doctor — config sanity check before wiring Gmail OAuth."""
 
 from __future__ import annotations
 
 import sys
 
-from gmail_mcp.config import ensure_data_dirs, settings
+from pigeon_mcp.config import ensure_data_dirs, settings
 
 PASS, WARN, FAIL = "PASS", "WARN", "FAIL"
 
@@ -36,7 +36,7 @@ def run() -> int:
             _line(
                 WARN,
                 "Google OAuth client credentials not set.",
-                "Add GMAIL_MCP_GOOGLE_CLIENT_ID and GMAIL_MCP_GOOGLE_CLIENT_SECRET to .keys.",
+                "Add PIGEON_MCP_GOOGLE_CLIENT_ID and PIGEON_MCP_GOOGLE_CLIENT_SECRET to .keys.",
             )
         )
 
@@ -47,7 +47,7 @@ def run() -> int:
             _line(
                 WARN,
                 "HTTP bearer token not set.",
-                "Add GMAIL_MCP_HTTP_BEARER_TOKEN to .keys for gateway/Hand transport.",
+                "Add PIGEON_MCP_HTTP_BEARER_TOKEN to .keys for gateway/Hand transport.",
             )
         )
 

@@ -15,12 +15,12 @@ the client in Google Cloud Console — the redirect URI should be
 | 1 | APIs & Services → Library | Enable **Gmail API** (required). Calendar / Drive may already be enabled on the project for *future* tools — this server does not use them yet; do not add those OAuth scopes until it does. |
 | 2 | OAuth consent screen | See [User type](#user-type-workspace-vs-personal-gmail) below |
 | 3 | Credentials → Create | **OAuth client ID → Web application** |
-| 4 | Web client | Authorized redirect URI **`https://<your-host>/oauth/callback`** (must match `GMAIL_MCP_OAUTH_PUBLIC_REDIRECT_URI` in `.env`) |
-| 5 | `.keys` | `GMAIL_MCP_GOOGLE_WEB_CLIENT_ID` / `GMAIL_MCP_GOOGLE_WEB_CLIENT_SECRET` (or primary slots if you use one client) |
+| 4 | Web client | Authorized redirect URI **`https://<your-host>/oauth/callback`** (must match `PIGEON_MCP_OAUTH_PUBLIC_REDIRECT_URI` in `.env`) |
+| 5 | `.keys` | `PIGEON_MCP_GOOGLE_WEB_CLIENT_ID` / `PIGEON_MCP_GOOGLE_WEB_CLIENT_SECRET` (or primary slots if you use one client) |
 
 For local stdio `accounts_add` only, add a **Desktop** client with redirect
-`http://127.0.0.1:8767/oauth/callback` → `GMAIL_MCP_GOOGLE_CLIENT_ID` /
-`GMAIL_MCP_GOOGLE_CLIENT_SECRET`. Hand over HTTP uses the Web client and
+`http://127.0.0.1:8767/oauth/callback` → `PIGEON_MCP_GOOGLE_CLIENT_ID` /
+`PIGEON_MCP_GOOGLE_CLIENT_SECRET`. Hand over HTTP uses the Web client and
 `accounts_auth_start`; consent completes via the public `/oauth/callback` route.
 
 ## Scopes requested
@@ -98,8 +98,8 @@ can read them — see your deploy runbook.
 Google asks for Privacy Policy and Terms of Service URLs on the consent screen.
 For the c52.com deployment these are published at:
 
-- Privacy: `https://gmcp.c52.com/privacy`
-- Terms: `https://gmcp.c52.com/terms`
+- Privacy: `https://pigeon.c52.com/privacy`
+- Terms: `https://pigeon.c52.com/terms`
 
 Markdown copies for your fork live in [`docs/legal/`](legal/README.md). Replace
 with your own URLs when you self-host under another domain.

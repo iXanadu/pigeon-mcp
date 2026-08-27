@@ -10,12 +10,12 @@ from mcp.server.mcpserver import MCPServer
 from starlette.requests import Request
 from starlette.responses import JSONResponse, PlainTextResponse, Response
 
-from gmail_mcp import accounts as accounts_mod
-from gmail_mcp import inbox as inbox_mod
-from gmail_mcp import mail as mail_mod
-from gmail_mcp.attachments import MAX_TOTAL_BYTES, stage_outbox_bytes
-from gmail_mcp.bearer_auth import StaticBearerVerifier
-from gmail_mcp.config import http_public_base_url, settings
+from pigeon_mcp import accounts as accounts_mod
+from pigeon_mcp import inbox as inbox_mod
+from pigeon_mcp import mail as mail_mod
+from pigeon_mcp.attachments import MAX_TOTAL_BYTES, stage_outbox_bytes
+from pigeon_mcp.bearer_auth import StaticBearerVerifier
+from pigeon_mcp.config import http_public_base_url, settings
 
 VERSION = "0.1.0"
 
@@ -60,7 +60,7 @@ def _parse_attachments(attachments_json: str) -> list[dict]:
 def build_mcp(*, http: bool = False) -> MCPServer:
     if http:
         if not settings.http_bearer_token:
-            raise RuntimeError("GMAIL_MCP_HTTP_BEARER_TOKEN is required for HTTP transport")
+            raise RuntimeError("PIGEON_MCP_HTTP_BEARER_TOKEN is required for HTTP transport")
         # Static bearer via connector headers only. Do not publish OAuth AS/PRM on the
         # public internet — Hand Authenticate UI belongs behind Cloudflare Access later.
         public_base = http_public_base_url()
@@ -69,13 +69,13 @@ def build_mcp(*, http: bool = False) -> MCPServer:
             resource_server_url=None,
         )
         mcp = MCPServer(
-            "gmail-mcp",
+            "pigeon-mcp",
             version=VERSION,
             auth=auth,
             token_verifier=StaticBearerVerifier(settings.http_bearer_token),
         )
     else:
-        mcp = MCPServer("gmail-mcp", version=VERSION)
+        mcp = MCPServer("pigeon-mcp", version=VERSION)
 
     if http:
 
@@ -184,7 +184,7 @@ def build_mcp(*, http: bool = False) -> MCPServer:
         """Report server version and configuration (no Gmail API calls)."""
         accts = await accounts_mod.accounts_list()
         return (
-            f"gmail-mcp {VERSION}\n"
+            f"pigeon-mcp {VERSION}\n"
             f"environment: {settings.environment}\n"
             f"outbox_root: {settings.outbox_root}\n"
             f"download_root: {settings.download_root}\n"

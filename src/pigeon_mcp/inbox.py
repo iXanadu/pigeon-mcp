@@ -5,9 +5,9 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from gmail_mcp.attachments import resolve_attachments, resolve_download_path
-from gmail_mcp.config import settings
-from gmail_mcp.gmail_client import (
+from pigeon_mcp.attachments import resolve_attachments, resolve_download_path
+from pigeon_mcp.config import settings
+from pigeon_mcp.gmail_client import (
     get_attachment_bytes,
     get_message,
     get_thread,
@@ -21,11 +21,11 @@ from gmail_mcp.gmail_client import (
     create_label,
     parse_message_headers,
 )
-from gmail_mcp.mail import _idempotency_store, _live_signature, _strip_html
-from gmail_mcp.mime_builder import build_mime
-from gmail_mcp.mime_parse import extract_html_body, extract_plain_body, list_attachment_parts
-from gmail_mcp.proof import verify_send_proof
-from gmail_mcp.session import access_token_for
+from pigeon_mcp.mail import _idempotency_store, _live_signature, _strip_html
+from pigeon_mcp.mime_builder import build_mime
+from pigeon_mcp.mime_parse import extract_html_body, extract_plain_body, list_attachment_parts
+from pigeon_mcp.proof import verify_send_proof
+from pigeon_mcp.session import access_token_for
 
 
 def format_result(result: Any) -> str:

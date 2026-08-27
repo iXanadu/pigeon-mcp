@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  gmail-mcp LaunchAgent (macOS) — runs as the logged-in user.
+  pigeon-mcp LaunchAgent (macOS) — runs as the logged-in user.
 
   Install:
-    cp launchd/com.gmail-mcp.plist ~/Library/LaunchAgents/
+    cp launchd/com.pigeon-mcp.plist ~/Library/LaunchAgents/
     # Edit YOUR_USERNAME and python path if needed, then:
     ./scripts/start.sh
 
@@ -13,13 +13,13 @@
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>com.gmail-mcp</string>
+    <string>com.pigeon-mcp</string>
     <key>ProgramArguments</key>
     <array>
-        <string>/Users/YOUR_USERNAME/.pyenv/versions/gmail-mcp-3.13/bin/gmail-mcp-http</string>
+        <string>/Users/YOUR_USERNAME/.pyenv/versions/pigeon-mcp-3.13/bin/pigeon-mcp-http</string>
     </array>
     <key>WorkingDirectory</key>
-    <string>/Users/YOUR_USERNAME/projects/gmail-mcp</string>
+    <string>/Users/YOUR_USERNAME/projects/pigeon-mcp</string>
     <key>EnvironmentVariables</key>
     <dict>
         <key>HOME</key>
@@ -32,8 +32,8 @@
     <key>KeepAlive</key>
     <true/>
     <key>StandardOutPath</key>
-    <string>/Users/YOUR_USERNAME/projects/gmail-mcp/logs/gmail-mcp.log</string>
+    <string>/Users/YOUR_USERNAME/projects/pigeon-mcp/logs/pigeon-mcp.log</string>
     <key>StandardErrorPath</key>
-    <string>/Users/YOUR_USERNAME/projects/gmail-mcp/logs/gmail-mcp.err</string>
+    <string>/Users/YOUR_USERNAME/projects/pigeon-mcp/logs/pigeon-mcp.err</string>
 </dict>
 </plist>

@@ -1,27 +1,27 @@
 # Non-sensitive configuration — copy to `.env` in the repo root
-# (or export the same GMAIL_MCP_* vars). Loaded with secrets via pydantic-settings.
+# (or export the same PIGEON_MCP_* vars). Loaded with secrets via pydantic-settings.
 
-GMAIL_MCP_ENVIRONMENT=local
-GMAIL_MCP_LOG_LEVEL=info
+PIGEON_MCP_ENVIRONMENT=local
+PIGEON_MCP_LOG_LEVEL=info
 
 # Streamable HTTP (Hand / gateway). Bind loopback; put a proxy in front for remote access.
-GMAIL_MCP_HTTP_HOST=127.0.0.1
-GMAIL_MCP_HTTP_PORT=8879
+PIGEON_MCP_HTTP_HOST=127.0.0.1
+PIGEON_MCP_HTTP_PORT=8879
 
 # Attachment paths (symlinks followed). Stage via POST /outbox/stage (bearer).
 # Pick a directory that fits THIS machine. On personal Macs, /tmp/... or ~/Outbox is fine.
 # Avoid dirs that backup/sync tools mirror into the cloud if you stage sensitive docs.
-GMAIL_MCP_OUTBOX_ROOT=~/Outbox
-GMAIL_MCP_DOWNLOAD_ROOT=~/Inbox
+PIGEON_MCP_OUTBOX_ROOT=~/Outbox
+PIGEON_MCP_DOWNLOAD_ROOT=~/Inbox
 
 # OAuth token storage (created on first accounts_add).
-GMAIL_MCP_TOKENS_DIR=~/.config/gmail-mcp/tokens
+PIGEON_MCP_TOKENS_DIR=~/.config/pigeon-mcp/tokens
 
 # Register this exact URI on your Google Desktop OAuth client
-GMAIL_MCP_OAUTH_REDIRECT_URI=http://127.0.0.1:8767/oauth/callback
+PIGEON_MCP_OAUTH_REDIRECT_URI=http://127.0.0.1:8767/oauth/callback
 
 # Hand / public consent — MUST match a Web application OAuth client redirect URI
-GMAIL_MCP_OAUTH_PUBLIC_REDIRECT_URI=https://your-host.example.com/oauth/callback
+PIGEON_MCP_OAUTH_PUBLIC_REDIRECT_URI=https://your-host.example.com/oauth/callback
 
 # Optional: public MCP URL (defaults to origin of OAUTH_PUBLIC_REDIRECT_URI)
-# GMAIL_MCP_HTTP_PUBLIC_URL=https://your-host.example.com
+# PIGEON_MCP_HTTP_PUBLIC_URL=https://your-host.example.com

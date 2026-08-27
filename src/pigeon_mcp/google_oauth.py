@@ -15,8 +15,8 @@ import httpx
 
 _log = logging.getLogger(__name__)
 
-from gmail_mcp.config import settings
-from gmail_mcp.oauth_constants import (
+from pigeon_mcp.config import settings
+from pigeon_mcp.oauth_constants import (
     GMAIL_PROFILE_URL,
     GMAIL_SCOPES,
     GOOGLE_AUTH_URL,
@@ -25,7 +25,7 @@ from gmail_mcp.oauth_constants import (
     STATUS_ACTIVE,
     STATUS_NEEDS_AUTH,
 )
-from gmail_mcp.token_store import AccountToken, TokenStore
+from pigeon_mcp.token_store import AccountToken, TokenStore
 
 _STATE_TTL = timedelta(minutes=10)
 

@@ -9,14 +9,14 @@ import httpx
 import pytest
 import respx
 
-from gmail_mcp.attachments import MAX_TOTAL_BYTES, resolve_attachments
-from gmail_mcp.config import settings
-from gmail_mcp.idempotency import IdempotencyStore
-from gmail_mcp.mail import forward, reply, send
-from gmail_mcp.mime_builder import build_mime
-from gmail_mcp.oauth_constants import STATUS_ACTIVE
-from gmail_mcp.proof import extract_hrefs_from_mime
-from gmail_mcp.token_store import AccountToken, TokenStore
+from pigeon_mcp.attachments import MAX_TOTAL_BYTES, resolve_attachments
+from pigeon_mcp.config import settings
+from pigeon_mcp.idempotency import IdempotencyStore
+from pigeon_mcp.mail import forward, reply, send
+from pigeon_mcp.mime_builder import build_mime
+from pigeon_mcp.oauth_constants import STATUS_ACTIVE
+from pigeon_mcp.proof import extract_hrefs_from_mime
+from pigeon_mcp.token_store import AccountToken, TokenStore
 
 GMAIL = "https://gmail.googleapis.com/gmail/v1"
 GMAIL_UP = "https://gmail.googleapis.com/upload/gmail/v1"
@@ -130,7 +130,7 @@ def test_message_id_uses_generic_domain():
         subject="Hi",
         body="x",
     )
-    assert b"gmail-mcp.local" in mime
+    assert b"pigeon-mcp.local" in mime
     assert leak_host.encode() not in mime
     assert leak_tailnet.encode() not in mime
 
@@ -138,7 +138,7 @@ def test_message_id_uses_generic_domain():
 @respx.mock
 async def test_send_with_proof(mail_env, monkeypatch):
     monkeypatch.setattr(
-        "gmail_mcp.mail._idempotency_store",
+        "pigeon_mcp.mail._idempotency_store",
         lambda: IdempotencyStore(mail_env["idem_path"]),
     )
     att = mail_env["outbox"] / "doc.pdf"
@@ -221,7 +221,7 @@ async def test_send_with_proof(mail_env, monkeypatch):
 @respx.mock
 async def test_reply_uses_thread(mail_env, monkeypatch):
     monkeypatch.setattr(
-        "gmail_mcp.mail._idempotency_store",
+        "pigeon_mcp.mail._idempotency_store",
         lambda: IdempotencyStore(mail_env["idem_path"]),
     )
     respx.get(f"{GMAIL}/users/me/settings/sendAs/sender@example.com").mock(
@@ -281,7 +281,7 @@ async def test_reply_uses_thread(mail_env, monkeypatch):
 @respx.mock
 async def test_forward_uses_thread(mail_env, monkeypatch):
     monkeypatch.setattr(
-        "gmail_mcp.mail._idempotency_store",
+        "pigeon_mcp.mail._idempotency_store",
         lambda: IdempotencyStore(mail_env["idem_path"]),
     )
     respx.get(f"{GMAIL}/users/me/settings/sendAs/sender@example.com").mock(

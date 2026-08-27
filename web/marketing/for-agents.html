@@ -3,23 +3,23 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>For agents — gmcp</title>
-  <meta name="description" content="gmcp is an MCP server for GrokBot and similar seats. Bearer auth, allow-listed tools, stage then send.">
+  <title>For agents — pigeon</title>
+  <meta name="description" content="pigeon is an MCP server for GrokBot and similar seats. Bearer auth, allow-listed tools, stage then send.">
   <link rel="stylesheet" href="site.css">
 </head>
 <body>
   <div class="w">
     <header class="mast">
       <div class="rail">
-        <b>gmcp</b>
-        <span>Self-hosted Gmail MCP</span>
-        <span class="sp">gmcp.c52.com</span>
+        <b>pigeon</b>
+        <span>Self-hosted Gmail for agents</span>
+        <span class="sp">pigeon.c52.com</span>
       </div>
       <nav>
         <a href="index.html">Overview</a>
         <a href="how-it-works.html">How it works</a>
         <a href="for-agents.html" aria-current="page">For agents</a>
-        <a href="https://github.com/iXanadu/gmcp">GitHub ↗</a>
+        <a href="https://github.com/iXanadu/pigeon-mcp">GitHub ↗</a>
       </nav>
     </header>
 
@@ -32,7 +32,7 @@
     <h2>Send with a file</h2>
     <pre><code># 1) Stage (same bearer as MCP)
 curl -sS -X POST \
-  "https://gmcp.example.com/outbox/stage?filename=report.pdf" \
+  "https://pigeon.example.com/outbox/stage?filename=report.pdf" \
   -H "Authorization: Bearer $TOKEN" \
   --data-binary @report.pdf
 
@@ -57,12 +57,12 @@ curl -sS -X POST \
     </ul>
 
     <div class="row">
-      <a class="b" href="https://github.com/iXanadu/gmcp">Repo</a>
+      <a class="b" href="https://github.com/iXanadu/pigeon-mcp">Repo</a>
       <a class="b b2" href="how-it-works.html">How it works</a>
     </div>
 
     <footer>
-      <span>Working name <b>gmcp</b> — better name TBD.</span>
+      <span>Working name <b>pigeon</b> — better name TBD.</span>
       <a href="privacy.html">Privacy</a>
       <a href="terms.html">Terms</a>
     </footer>

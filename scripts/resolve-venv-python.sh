@@ -1,12 +1,12 @@
 #!/bin/bash
-# Resolve the pyenv virtualenv python for gmail-mcp.
+# Resolve the pyenv virtualenv python for pigeon-mcp.
 #
 # Usage:
 #   ./scripts/resolve-venv-python.sh [python|bin/python]
 
 set -euo pipefail
 
-VENV="${GMAIL_MCP_VENV:-gmail-mcp-3.13}"
+VENV="${PIGEON_MCP_VENV:-pigeon-mcp-3.13}"
 CMD="${1:-python}"
 PYENV_ROOT="${PYENV_ROOT:-$HOME/.pyenv}"
 

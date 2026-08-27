@@ -8,17 +8,17 @@ import pytest
 import respx
 from unittest.mock import AsyncMock, patch
 
-from gmail_mcp.accounts import (
+from pigeon_mcp.accounts import (
     accounts_add,
     accounts_add_complete,
     accounts_auth_start,
     accounts_list,
     accounts_remove,
 )
-from gmail_mcp.config import settings
-from gmail_mcp.google_oauth import build_auth_url, complete_oauth, refresh_access_token
-from gmail_mcp.oauth_constants import STATUS_ACTIVE, STATUS_NEEDS_AUTH
-from gmail_mcp.token_store import AccountToken, TokenStore
+from pigeon_mcp.config import settings
+from pigeon_mcp.google_oauth import build_auth_url, complete_oauth, refresh_access_token
+from pigeon_mcp.oauth_constants import STATUS_ACTIVE, STATUS_NEEDS_AUTH
+from pigeon_mcp.token_store import AccountToken, TokenStore
 
 GMAIL_PROFILE = "https://gmail.googleapis.com/gmail/v1/users/me/profile"
 
@@ -193,7 +193,7 @@ async def test_accounts_remove_still_deletes_when_revoke_fails(token_store):
 @respx.mock
 async def test_accounts_add_awaits_callback_and_returns_email(token_store, monkeypatch):
     monkeypatch.setattr(
-        "gmail_mcp.oauth_callback.run_callback_server",
+        "pigeon_mcp.oauth_callback.run_callback_server",
         AsyncMock(return_value="auth-code"),
     )
     respx.post("https://oauth2.googleapis.com/token").mock(
@@ -239,11 +239,11 @@ async def test_accounts_add_complete(token_store):
 
 
 async def test_accounts_auth_start_returns_public_url(token_store, monkeypatch):
-    monkeypatch.setattr(settings, "oauth_public_redirect_uri", "https://gmcp.example/oauth/callback")
+    monkeypatch.setattr(settings, "oauth_public_redirect_uri", "https://pigeon.example/oauth/callback")
     monkeypatch.setattr(settings, "google_web_client_id", "web-id")
     monkeypatch.setattr(settings, "google_web_client_secret", "web-secret")
     result = await accounts_auth_start()
-    assert result["redirect_uri"] == "https://gmcp.example/oauth/callback"
+    assert result["redirect_uri"] == "https://pigeon.example/oauth/callback"
     assert "accounts.google.com" in result["auth_url"]
     assert "code_challenge=" in result["auth_url"]
     assert result["state"]
