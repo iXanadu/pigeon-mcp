@@ -3,7 +3,7 @@
 ## Project Overview
 Gmail connector for MCP: one tool module, two transports (stdio for local harnesses, Streamable HTTP behind the gateway for Hand). OAuth refresh-token auth, N Gmail identities, server-built MIME, file-path attachments, live signatures.
 
-**READ FIRST, in this order:** `docs/specs/gmail-mcp-spec.md` (the owner's spec — source of truth, blocking tests 2/3/8) then `docs/specs/gmail-mcp-spec-review.md` (pre-build review: 10 gaps, 5 of which change the build — resolve each with the owner/PM, never silently adopt or skip). Reference implementation to copy the shape from: `~/projects/engram/integrations/claude-code/`.
+**READ FIRST, in this order:** `BACKLOG.md` (deferred work — if it is not there it is not tracked), `docs/specs/gmail-mcp-spec.md` (owner spec — blocking tests 2/3/8), then `docs/specs/gmail-mcp-spec-review.md`. Reference shape: `~/projects/engram/integrations/claude-code/`.
 
 ## Project Structure
 ```
