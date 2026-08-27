@@ -13,7 +13,10 @@ service_account_*.json
 # Claude Json File
 .claude/settings.local.json
 
-# Operator secrets stay local; agent docs (AGENTS.md, skills, .engram.cfg) are tracked when cleaned
+# Local-only (not for public clones)
+.engram.cfg
+BACKLOG.md
+.claude/
 
 
 # Backup files that might contain secrets
