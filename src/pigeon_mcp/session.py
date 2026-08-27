@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from gmail_mcp.google_oauth import ensure_fresh_token
-from gmail_mcp.oauth_constants import STATUS_NEEDS_AUTH
-from gmail_mcp.token_store import TokenStore
-from gmail_mcp.config import settings
+from pigeon_mcp.google_oauth import ensure_fresh_token
+from pigeon_mcp.oauth_constants import STATUS_NEEDS_AUTH
+from pigeon_mcp.token_store import TokenStore
+from pigeon_mcp.config import settings
 
 
 def _token_store() -> TokenStore:

@@ -1,4 +1,4 @@
-# gmail-mcp
+# pigeon-mcp
 
 Gmail connector for MCP clients. One server, many Gmail accounts via OAuth refresh tokens. Sends real MIME (file-path attachments, live signatures, post-send proof). Reads and organises mail without dumping megabytes of base64 into the model.
 
@@ -23,12 +23,12 @@ Gmail connector for MCP clients. One server, many Gmail accounts via OAuth refre
 ## Quick start
 
 ```bash
-git clone https://github.com/iXanadu/gmcp.git
-cd gmcp
+git clone https://github.com/iXanadu/pigeon-mcp.git
+cd pigeon-mcp
 
 # Python 3.12+ (example with pyenv)
-pyenv virtualenv 3.13 gmail-mcp-3.13
-pyenv local gmail-mcp-3.13
+pyenv virtualenv 3.13 pigeon-mcp-3.13
+pyenv local pigeon-mcp-3.13
 pip install -e '.[dev]'
 
 # Config (see examples/)
@@ -37,7 +37,7 @@ cp examples/secrets.example .keys
 chmod 600 .keys
 
 # Sanity check
-gmail-doctor
+pigeon-doctor
 ```
 
 Fill in `.keys` with your Google OAuth credentials and an HTTP bearer token before running the HTTP transport.
@@ -59,11 +59,11 @@ Quick checklist:
 | 1 | APIs & Services → Library | Enable **Gmail API** |
 | 2 | OAuth consent screen | **External** → **Publish app** (*In production*). Do **not** stay in Testing (7-day refresh expiry). See the doc for Workspace **Internal**. |
 | 3 | Credentials → Create | **OAuth client ID → Web application** |
-| 4 | Web client | Redirect **`https://<your-host>/oauth/callback`** → `GMAIL_MCP_OAUTH_PUBLIC_REDIRECT_URI` |
-| 5 | `.keys` | Web client id/secret → `GMAIL_MCP_GOOGLE_WEB_CLIENT_ID` / `_SECRET` (see `examples/secrets.example`) |
+| 4 | Web client | Redirect **`https://<your-host>/oauth/callback`** → `PIGEON_MCP_OAUTH_PUBLIC_REDIRECT_URI` |
+| 5 | `.keys` | Web client id/secret → `PIGEON_MCP_GOOGLE_WEB_CLIENT_ID` / `_SECRET` (see `examples/secrets.example`) |
 
 Privacy / Terms URLs for the consent screen: [`docs/legal/`](docs/legal/README.md)
-(c52.com live: `https://gmcp.c52.com/privacy`, `https://gmcp.c52.com/terms`).
+(c52.com live: `https://pigeon.c52.com/privacy`, `https://pigeon.c52.com/terms`).
 
 On first connect, Google asks for consent. Scopes are fixed in the server: read/send/organise mail plus read send-as signature (not cached).
 
@@ -76,15 +76,15 @@ On first connect, Google asks for consent. Scopes are fixed in the server: read/
 finishes automatically. Then `accounts_list` over HTTP.
 
 **Local stdio only:** `accounts_add` opens a browser for Google consent. It runs
-on the **stdio** transport (`gmail-mcp`), not over HTTP.
+on the **stdio** transport (`pigeon-mcp`), not over HTTP.
 
 ```bash
-gmail-mcp   # stdio — required for accounts_add and accounts_remove
+pigeon-mcp   # stdio — required for accounts_add and accounts_remove
 ```
 
 Call `accounts_add` from your MCP client. When consent finishes, the server records the Gmail address Google returns; that address is the `account` key for every other tool.
 
-Tokens land in `GMAIL_MCP_TOKENS_DIR` (default `~/.config/gmail-mcp/tokens/`) as `gmail-token-<account>.json` (mode 0640). On a production host, set `GMAIL_MCP_TOKENS_DIR` to a directory your backup actually sweeps (often next to the app checkout), then copy the token files there.
+Tokens land in `PIGEON_MCP_TOKENS_DIR` (default `~/.config/pigeon-mcp/tokens/`) as `gmail-token-<account>.json` (mode 0640). On a production host, set `PIGEON_MCP_TOKENS_DIR` to a directory your backup actually sweeps (often next to the app checkout), then copy the token files there.
 
 #### Headless server (no local browser)
 
@@ -102,7 +102,7 @@ Open the authorization URL the server prints (or trigger `accounts_add` through 
 
 **B — Consent on a desktop, copy tokens**
 
-Run `accounts_add` once on a Mac or PC with a browser and the same `.env` / `.keys`. After consent, copy the `gmail-token-*.json` files to the production host’s `GMAIL_MCP_TOKENS_DIR` (mode 0640). No re-consent unless Google revokes the refresh token.
+Run `accounts_add` once on a Mac or PC with a browser and the same `.env` / `.keys`. After consent, copy the `gmail-token-*.json` files to the production host’s `PIGEON_MCP_TOKENS_DIR` (mode 0640). No re-consent unless Google revokes the refresh token.
 
 ## Deployment layout
 
@@ -111,7 +111,7 @@ Typical production split:
 ```
 ┌─────────────────────┐         ┌──────────────────────────┐
 │  Operator machine   │         │  MCP server (Linux/macOS) │
-│  (browser for OAuth)│         │  gmail-mcp-http           │
+│  (browser for OAuth)│         │  pigeon-mcp-http           │
 │  accounts_add       │  copy   │  127.0.0.1:8879           │
 │  token files ───────┼────────►│  + .env / .keys           │
 └─────────────────────┘  tokens └───────────┬──────────────┘
@@ -124,9 +124,9 @@ Typical production split:
 - **Do not** expose the operator's laptop to the public internet for MCP HTTP. HTTP binds **loopback** (`127.0.0.1:8879`) on the server; a reverse proxy terminates TLS and forwards to that port.
 - **OAuth** happens where a browser exists (operator machine or SSH tunnel). Token JSON files are copied to the server.
 - **Gateway** points at the **server** hostname you control (e.g. `mcp.example.com`), not the OAuth workstation.
-- Generate a long random `GMAIL_MCP_HTTP_BEARER_TOKEN`; the gateway presents it as `Authorization: Bearer …`.
+- Generate a long random `PIGEON_MCP_HTTP_BEARER_TOKEN`; the gateway presents it as `Authorization: Bearer …`.
 
-After deploy: `gmail-doctor`, `./scripts/start.sh` (macOS LaunchAgent) or your own systemd unit, then `accounts_list` over HTTP to confirm tokens.
+After deploy: `pigeon-doctor`, `./scripts/start.sh` (macOS LaunchAgent) or your own systemd unit, then `accounts_list` over HTTP to confirm tokens.
 
 ## Configuration
 
@@ -134,50 +134,50 @@ Non-sensitive settings live in `.env`; secrets in `.keys` (never commit either w
 
 | Variable | File | Purpose |
 | --- | --- | --- |
-| `GMAIL_MCP_ENVIRONMENT` | `.env` | Label for logs/status |
-| `GMAIL_MCP_LOG_LEVEL` | `.env` | Server log level |
-| `GMAIL_MCP_HTTP_HOST` | `.env` | HTTP bind address (default `127.0.0.1`) |
-| `GMAIL_MCP_HTTP_PORT` | `.env` | HTTP port (default `8879`) |
-| `GMAIL_MCP_OUTBOX_ROOT` | `.env` | Send/stage attachment paths (pick per machine; `/tmp/...` fine on personal hosts) |
-| `GMAIL_MCP_DOWNLOAD_ROOT` | `.env` | `get_attachment` writes |
-| `GMAIL_MCP_TOKENS_DIR` | `.env` | OAuth token storage directory |
-| `GMAIL_MCP_OAUTH_REDIRECT_URI` | `.env` | OAuth loopback callback (stdio Desktop client) |
-| `GMAIL_MCP_OAUTH_PUBLIC_REDIRECT_URI` | `.env` | Public HTTPS callback (Web client / Hand) |
-| `GMAIL_MCP_GOOGLE_WEB_CLIENT_ID` | `.keys` | Google Web OAuth client id |
-| `GMAIL_MCP_GOOGLE_WEB_CLIENT_SECRET` | `.keys` | Google Web OAuth client secret |
-| `GMAIL_MCP_GOOGLE_CLIENT_ID` | `.keys` | Optional Desktop client (stdio) |
-| `GMAIL_MCP_GOOGLE_CLIENT_SECRET` | `.keys` | Optional Desktop client secret |
-| `GMAIL_MCP_HTTP_BEARER_TOKEN` | `.keys` | Bearer token for HTTP transport |
+| `PIGEON_MCP_ENVIRONMENT` | `.env` | Label for logs/status |
+| `PIGEON_MCP_LOG_LEVEL` | `.env` | Server log level |
+| `PIGEON_MCP_HTTP_HOST` | `.env` | HTTP bind address (default `127.0.0.1`) |
+| `PIGEON_MCP_HTTP_PORT` | `.env` | HTTP port (default `8879`) |
+| `PIGEON_MCP_OUTBOX_ROOT` | `.env` | Send/stage attachment paths (pick per machine; `/tmp/...` fine on personal hosts) |
+| `PIGEON_MCP_DOWNLOAD_ROOT` | `.env` | `get_attachment` writes |
+| `PIGEON_MCP_TOKENS_DIR` | `.env` | OAuth token storage directory |
+| `PIGEON_MCP_OAUTH_REDIRECT_URI` | `.env` | OAuth loopback callback (stdio Desktop client) |
+| `PIGEON_MCP_OAUTH_PUBLIC_REDIRECT_URI` | `.env` | Public HTTPS callback (Web client / Hand) |
+| `PIGEON_MCP_GOOGLE_WEB_CLIENT_ID` | `.keys` | Google Web OAuth client id |
+| `PIGEON_MCP_GOOGLE_WEB_CLIENT_SECRET` | `.keys` | Google Web OAuth client secret |
+| `PIGEON_MCP_GOOGLE_CLIENT_ID` | `.keys` | Optional Desktop client (stdio) |
+| `PIGEON_MCP_GOOGLE_CLIENT_SECRET` | `.keys` | Optional Desktop client secret |
+| `PIGEON_MCP_HTTP_BEARER_TOKEN` | `.keys` | Bearer token for HTTP transport |
 
-Run `gmail-doctor` after changing config.
+Run `pigeon-doctor` after changing config.
 
 ## Transports
 
 ### stdio (local)
 
 ```bash
-gmail-mcp
+pigeon-mcp
 ```
 
 Registers **all** tools, including `accounts_add` and `accounts_remove`.
 
-Wire into Cursor / Claude Code MCP config with the venv `gmail-mcp` binary and `cwd` set to the repo (so `.env` / `.keys` load).
+Wire into Cursor / Claude Code MCP config with the venv `pigeon-mcp` binary and `cwd` set to the repo (so `.env` / `.keys` load).
 
 ### Streamable HTTP (gateway)
 
 ```bash
-gmail-mcp-http
+pigeon-mcp-http
 ```
 
-Binds `127.0.0.1:8879` by default. Requires `Authorization: Bearer <GMAIL_MCP_HTTP_BEARER_TOKEN>`; requests without a valid token get **401**.
+Binds `127.0.0.1:8879` by default. Requires `Authorization: Bearer <PIGEON_MCP_HTTP_BEARER_TOKEN>`; requests without a valid token get **401**.
 
 **Hand allow-list** (HTTP only): read/organise tools plus `send`, `reply`, `forward`, `draft_create`, `draft_send`, `accounts_list`, `accounts_auth_start`, and `gmail_status`. Account management (`accounts_add` / `accounts_remove`) stays on stdio.
 
 **Stage attachments for Hand** (no scp required):
 
 ```bash
-curl -sS -X POST "https://gmcp.c52.com/outbox/stage?filename=deed.pdf" \
-  -H "Authorization: Bearer $GMAIL_MCP_HTTP_BEARER_TOKEN" \
+curl -sS -X POST "https://pigeon.c52.com/outbox/stage?filename=deed.pdf" \
+  -H "Authorization: Bearer $PIGEON_MCP_HTTP_BEARER_TOKEN" \
   --data-binary @deed.pdf
 # → {"path":".../deed.pdf","filename":"deed.pdf","size":N,...}
 ```
@@ -192,9 +192,9 @@ Then call `send` / `reply` / `forward` with `attachments_json` using that `path`
 ./scripts/restart.sh
 ```
 
-Edit `launchd/com.gmail-mcp.plist` paths if your checkout or pyenv name differs. Logs go to `logs/`.
+Edit `launchd/com.pigeon-mcp.plist` paths if your checkout or pyenv name differs. Logs go to `logs/`.
 
-On Linux, run `gmail-mcp-http` under systemd with the same loopback bind — see **Deployment layout** above.
+On Linux, run `pigeon-mcp-http` under systemd with the same loopback bind — see **Deployment layout** above.
 
 ## Tools
 
@@ -233,7 +233,7 @@ Uses mocked Gmail HTTP; no live mailbox required.
 
 ## Spec
 
-Product requirements: `docs/specs/gmail-mcp-spec.md`
+Product requirements: `docs/specs/pigeon-mcp-spec.md`
 
 ## License
 

@@ -1,12 +1,12 @@
 #!/bin/bash
-# Stop gmail-mcp HTTP service (user LaunchAgent).
+# Stop pigeon-mcp HTTP service (user LaunchAgent).
 #
 # Usage:
 #   ./scripts/stop.sh
 
 set -euo pipefail
 
-LABEL="com.gmail-mcp"
+LABEL="com.pigeon-mcp"
 PLIST="$HOME/Library/LaunchAgents/${LABEL}.plist"
 
 if [[ "$(uname)" != "Darwin" ]]; then

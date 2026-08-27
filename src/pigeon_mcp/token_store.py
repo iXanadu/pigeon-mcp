@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from gmail_mcp.oauth_constants import STATUS_ACTIVE, STATUS_NEEDS_AUTH
+from pigeon_mcp.oauth_constants import STATUS_ACTIVE, STATUS_NEEDS_AUTH
 
 _EMAIL_SAFE = re.compile(r"[^a-zA-Z0-9._-]+")
 

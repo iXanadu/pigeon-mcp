@@ -1,7 +1,7 @@
 # Terms of Service
 
 **GrokBot Gmail MCP** — private integration operated by the owner of the deployment
-hostname (published at `https://gmcp.c52.com/terms` for c52.com).
+hostname (published at `https://pigeon.c52.com/terms` for c52.com).
 
 ## Private use
 

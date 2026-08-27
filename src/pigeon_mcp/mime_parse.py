@@ -5,7 +5,7 @@ from __future__ import annotations
 import base64
 import re
 
-from gmail_mcp.gmail_client import walk_parts
+from pigeon_mcp.gmail_client import walk_parts
 
 _TAG_RE = re.compile(r"<[^>]+>")
 

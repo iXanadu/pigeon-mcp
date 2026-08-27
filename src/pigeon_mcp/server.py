@@ -2,8 +2,8 @@
 
 import asyncio
 
-from gmail_mcp.app import build_mcp
-from gmail_mcp.config import ensure_data_dirs
+from pigeon_mcp.app import build_mcp
+from pigeon_mcp.config import ensure_data_dirs
 
 
 async def _amain() -> None:

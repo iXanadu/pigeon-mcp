@@ -1,7 +1,7 @@
 [project]
-name = "gmail-mcp"
+name = "pigeon-mcp"
 version = "0.1.0"
-description = "Gmail MCP connector for GrokBot — stdio locally, Streamable HTTP via gateway"
+description = "Pigeon — self-hosted Gmail MCP for GrokBot (stdio + Streamable HTTP)"
 requires-python = ">=3.12"
 license = "Apache-2.0"
 dependencies = [
@@ -18,9 +18,9 @@ dev = [
 ]
 
 [project.scripts]
-gmail-mcp = "gmail_mcp.server:main"
-gmail-mcp-http = "gmail_mcp.http_server:main"
-gmail-doctor = "gmail_mcp.doctor:main"
+pigeon-mcp = "pigeon_mcp.server:main"
+pigeon-mcp-http = "pigeon_mcp.http_server:main"
+pigeon-doctor = "pigeon_mcp.doctor:main"
 
 [build-system]
 requires = ["setuptools>=75.0"]

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Restart gmail-mcp HTTP service (user LaunchAgent).
+# Restart pigeon-mcp HTTP service (user LaunchAgent).
 #
 # Usage:
 #   ./scripts/restart.sh

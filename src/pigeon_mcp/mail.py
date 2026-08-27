@@ -6,21 +6,21 @@ import json
 from pathlib import Path
 from typing import Any
 
-from gmail_mcp.attachments import resolve_attachments
-from gmail_mcp.config import settings
-from gmail_mcp.gmail_client import (
+from pigeon_mcp.attachments import resolve_attachments
+from pigeon_mcp.config import settings
+from pigeon_mcp.gmail_client import (
     GmailApiError,
     get_message,
     get_send_as,
     parse_message_headers,
     send_raw_mime,
 )
-from gmail_mcp.google_oauth import ensure_fresh_token
-from gmail_mcp.idempotency import IdempotencyStore
-from gmail_mcp.mime_builder import build_mime
-from gmail_mcp.oauth_constants import STATUS_NEEDS_AUTH
-from gmail_mcp.proof import verify_send_proof
-from gmail_mcp.token_store import TokenStore
+from pigeon_mcp.google_oauth import ensure_fresh_token
+from pigeon_mcp.idempotency import IdempotencyStore
+from pigeon_mcp.mime_builder import build_mime
+from pigeon_mcp.oauth_constants import STATUS_NEEDS_AUTH
+from pigeon_mcp.proof import verify_send_proof
+from pigeon_mcp.token_store import TokenStore
 
 
 def _idempotency_store() -> IdempotencyStore:

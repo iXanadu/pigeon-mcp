@@ -7,8 +7,8 @@ from pathlib import Path
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from gmail_mcp.app import build_mcp
-from gmail_mcp.config import settings
+from pigeon_mcp.app import build_mcp
+from pigeon_mcp.config import settings
 
 
 @pytest.fixture
@@ -40,7 +40,7 @@ async def test_http_401_omits_oauth_discovery(monkeypatch):
     monkeypatch.setattr(
         settings,
         "oauth_public_redirect_uri",
-        "https://gmcp.example.com/oauth/callback",
+        "https://pigeon.example.com/oauth/callback",
     )
     app = build_mcp(http=True).streamable_http_app(
         streamable_http_path="/mcp",
@@ -70,15 +70,15 @@ async def test_oauth_callback_rejects_bad_state(http_app):
 
 
 async def test_oauth_callback_completes(http_app, tmp_path, monkeypatch):
-    from gmail_mcp.google_oauth import build_auth_url
-    from gmail_mcp import accounts as accounts_mod
+    from pigeon_mcp.google_oauth import build_auth_url
+    from pigeon_mcp import accounts as accounts_mod
     import httpx
     import respx
 
     monkeypatch.setattr(settings, "tokens_dir", tmp_path / "tokens")
     monkeypatch.setattr(settings, "google_client_id", "cid")
     monkeypatch.setattr(settings, "google_client_secret", "sec")
-    _, state = build_auth_url("https://gmcp.example/oauth/callback", client_id="cid", client_secret="sec")
+    _, state = build_auth_url("https://pigeon.example/oauth/callback", client_id="cid", client_secret="sec")
 
     with respx.mock:
         respx.post("https://oauth2.googleapis.com/token").mock(
@@ -145,7 +145,7 @@ async def test_outbox_stage_writes_under_outbox(http_app, tmp_path, monkeypatch)
 
 
 async def test_outbox_stage_rejects_oversize(http_app, tmp_path, monkeypatch):
-    from gmail_mcp.attachments import MAX_TOTAL_BYTES
+    from pigeon_mcp.attachments import MAX_TOTAL_BYTES
 
     monkeypatch.setattr(settings, "outbox_root", tmp_path / "Outbox")
     monkeypatch.setattr(settings, "http_bearer_token", "stage-secret")
@@ -190,7 +190,7 @@ def test_sanitize_rejects_encoded_dot_traversal_alone():
     """Standalone %2e case — no literal '..' to mask a broken check (admin lesson)."""
     from urllib.parse import unquote
 
-    from gmail_mcp.attachments import sanitize_outbox_filename
+    from pigeon_mcp.attachments import sanitize_outbox_filename
 
     raw = unquote("%2e%2e%2fevil.sh")
     with pytest.raises(ValueError):
@@ -201,7 +201,7 @@ def test_sanitize_rejects_encoded_dot_traversal_alone():
 
 def test_sanitize_allows_percent_in_business_filenames():
     """Post-decode '%' is ordinary (100% complete.xlsx); edge blocks %2e/%2f pre-decode."""
-    from gmail_mcp.attachments import sanitize_outbox_filename
+    from pigeon_mcp.attachments import sanitize_outbox_filename
 
     assert sanitize_outbox_filename("100% complete.xlsx") == "100% complete.xlsx"
     assert sanitize_outbox_filename("Q3 margin 12% v2.docx") == "Q3 margin 12% v2.docx"

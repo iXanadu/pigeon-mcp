@@ -9,9 +9,9 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import formataddr, formatdate, make_msgid
 
-from gmail_mcp.attachments import ResolvedAttachment
+from pigeon_mcp.attachments import ResolvedAttachment
 
-_MSGID_DOMAIN = "gmail-mcp.local"
+_MSGID_DOMAIN = "pigeon-mcp.local"
 _TAG_RE = re.compile(r"<[^>]+>")
 
 

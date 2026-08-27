@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     download_root: Path = Path.home() / "Inbox"
 
     # OAuth token storage (populated after accounts.add)
-    tokens_dir: Path = Path.home() / ".config" / "gmail-mcp" / "tokens"
+    tokens_dir: Path = Path.home() / ".config" / "pigeon-mcp" / "tokens"
 
     # Google OAuth client — Desktop for stdio; optional Web slots for Hand/public callback
     google_client_id: str = ""
@@ -52,7 +52,7 @@ class Settings(BaseSettings):
     oauth_public_redirect_uri: str = ""
 
     model_config = SettingsConfigDict(
-        env_prefix="GMAIL_MCP_",
+        env_prefix="PIGEON_MCP_",
         env_file=_dotenv_files(),
         env_file_encoding="utf-8",
         extra="ignore",

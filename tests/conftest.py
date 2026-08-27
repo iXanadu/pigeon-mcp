@@ -5,12 +5,12 @@ import sys
 _SRC = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src")
 if _SRC not in sys.path:
     sys.path.insert(0, _SRC)
-for _m in [m for m in list(sys.modules) if m == "gmail_mcp" or m.startswith("gmail_mcp.")]:
+for _m in [m for m in list(sys.modules) if m == "pigeon_mcp" or m.startswith("pigeon_mcp.")]:
     del sys.modules[_m]
 
 import pytest
 
-import gmail_mcp.config as config_mod
+import pigeon_mcp.config as config_mod
 
 
 @pytest.fixture(autouse=True)
