@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Your own server — pigeon</title>
+  <meta name="description" content="A $5/month VPS runs pigeon and other small self-hosted tools. Ten minutes of setup by hand, then you prompt an agent for the rest.">
+  <link rel="stylesheet" href="site.css">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+</head>
+<body>
+  <div class="w w-wide">
+    <header class="mast">
+      <div>
+        <a class="brand" href="/">pigeon</a><span class="tag">Self-hosted Gmail for agents</span>
+      </div>
+      <nav>
+        <a href="/">Overview</a>
+        <a href="how-it-works.html">How it works</a>
+        <a href="for-agents.html">For agents</a>
+        <a href="your-server.html" aria-current="page">Your own server</a>
+        <a href="https://github.com/iXanadu/pigeon-mcp">GitHub ↗</a>
+      </nav>
+    </header>
+
+    <div class="page-split">
+    <main class="page-main">
+    <h1>Your own server</h1>
+    <p class="lede">pigeon is small. So are the other tools worth self-hosting. One cheap VPS runs several of them, and you do not need to become a sysadmin first — you do about ten minutes of work by hand, then you prompt an agent for the rest.</p>
+
+    <h2>What you are buying</h2>
+    <p>Any provider with a small Linux instance works. Around <strong>$5&nbsp;/&nbsp;€5 a month</strong> buys roughly 1–4&nbsp;GB of RAM, a shared vCPU and 20–50&nbsp;GB of disk. Prices and tiers move constantly — treat the names below as where to look, not as a quote.</p>
+
+    <h3>Widely used, global regions</h3>
+    <div class="cols">
+      <div>
+        <h3>Akamai (Linode)</h3>
+        <p>What this site runs on. Regions across NA, EU, India, Japan, Singapore, Australia, Brazil. Predictable flat billing.</p>
+      </div>
+      <div>
+        <h3>DigitalOcean</h3>
+        <p>The gentlest console of the lot, and the best-documented. NA, EU, Singapore, Bangalore, Sydney.</p>
+      </div>
+      <div>
+        <h3>Vultr</h3>
+        <p>The widest region list — 30-odd cities including Seoul, Tokyo, Osaka, Mumbai, Tel Aviv, Johannesburg, São Paulo.</p>
+      </div>
+    </div>
+
+    <h3>Europe</h3>
+    <div class="cols">
+      <div>
+        <h3>Hetzner</h3>
+        <p>Germany and Finland, plus US sites. Usually the most RAM per euro of anyone here. Very popular for exactly this kind of hosting.</p>
+      </div>
+      <div>
+        <h3>OVHcloud</h3>
+        <p>French, large, with EU, Canadian and APAC regions. Cheap VPS tier; the console takes some getting used to.</p>
+      </div>
+      <div>
+        <h3>Scaleway · netcup · IONOS</h3>
+        <p>France and Germany. Inexpensive, EU-resident, GDPR-simple. netcup in particular is a lot of machine for the money.</p>
+      </div>
+      <div>
+        <h3>UpCloud</h3>
+        <p>Finnish, fast storage, EU plus a few global sites. Slightly more money, noticeably quicker disks.</p>
+      </div>
+    </div>
+
+    <h3>Asia-Pacific, and elsewhere</h3>
+    <div class="cols">
+      <div>
+        <h3>Alibaba Cloud · Tencent Cloud</h3>
+        <p>The obvious choices if your users or your mail are in mainland China or nearby.</p>
+      </div>
+      <div>
+        <h3>BinaryLane · Bunny · local hosts</h3>
+        <p>Australia, and most countries have a good small provider. Local latency and local billing often beat a big name.</p>
+      </div>
+      <div>
+        <h3>Oracle Cloud Free Tier</h3>
+        <p>Genuinely free ARM instances, and generous ones. Capacity is often unavailable, and idle instances can be reclaimed — fine to try, poor place for something you rely on.</p>
+      </div>
+    </div>
+
+    <p class="m s"><strong>Pick the region deliberately.</strong> Two things depend on it and neither is speed: the jurisdiction your mail tokens sit in, and — if you are in the EU or serving EU users — whether you have just made your own life harder under GDPR. An EU-resident host is the simpler answer there. Otherwise choose the city closest to you, not the cheapest one.</p>
+    <p class="m s">1&nbsp;GB is comfortable for pigeon plus a couple of other small Python services behind nginx. If you plan to add a database and three or four more tools, start at 2–4&nbsp;GB — it is a few more dollars, and resizing later means downtime. ARM instances are cheaper and work fine here; just check anything you install has an <code>arm64</code> build.</p>
+
+    <h2>The part you do by hand</h2>
+    <p>Everything here is done once, as root, before any agent is involved. It exists so the agent has a safe account to work in and a name to get a certificate for.</p>
+    <ol class="steps">
+      <li>
+        <h3>Create the instance</h3>
+        <p>Ubuntu LTS. <strong>Paste your SSH public key into the create form</strong> — doing it now means you never enable password login at all.</p>
+      </li>
+      <li>
+        <h3>Point a DNS name at it</h3>
+        <p>An <code>A</code> record for the host you want, e.g. <code>pigeon.example.com</code> → the instance IP. Do this early; certificates need the name to resolve.</p>
+      </li>
+      <li>
+        <h3>Update, and make yourself a user</h3>
+        <p>Log in as root once and run the update, then create a normal account with <code>sudo</code> and copy your key to it. From then on you log in as that user, not root.</p>
+        <pre><code>apt update &amp;&amp; apt full-upgrade -y
+adduser you
+usermod -aG sudo you
+rsync --archive --chown=you:you ~/.ssh /home/you/</code></pre>
+      </li>
+      <li>
+        <h3>Install your agent, and stop typing</h3>
+        <p>Install whichever coding agent you use, log in as <em>your</em> user, and start it in a working directory. That is the end of the manual part.</p>
+      </li>
+    </ol>
+
+    <h2>Then you prompt for the rest</h2>
+    <p>This is the actual technique: you are not learning to administer a server, you are learning to <em>direct</em> one. Work in small steps, ask for an explanation before a change, and ask for evidence after it.</p>
+    <p>Give the agent sudo through your user — <strong>not a root login</strong>. An agent with sudo can do anything you can do, which is the point and also the risk. Small steps keep it reviewable.</p>
+
+    <h3>1 · Look before touching</h3>
+    <pre><code>You are on a fresh Ubuntu server that will be on the public
+internet. Change nothing yet. Tell me: what is installed, what
+is listening on a port, what the firewall state is, and what
+you would change before this box is exposed. List it as
+findings, worst first.</code></pre>
+
+    <h3>2 · Basic hardening</h3>
+    <pre><code>Do the standard hardening for a small public server:
+unattended security upgrades, a firewall allowing only SSH,
+HTTP and HTTPS, SSH key-only authentication, and fail2ban.
+Explain each change before you make it, and after each one
+show me the command that proves it took effect.</code></pre>
+
+    <h3>3 · A name and a certificate</h3>
+    <pre><code>Install nginx and certbot. Set up pigeon.example.com with a
+Let's Encrypt certificate. Then prove renewal actually works
+with a dry run — do not just tell me it is configured.</code></pre>
+    <p class="m s">That last sentence matters more than it looks. A certificate that installs cleanly and silently fails to renew is a site that breaks in ninety days.</p>
+
+    <h3>4 · Install pigeon</h3>
+    <pre><code>Install pigeon-mcp from https://github.com/iXanadu/pigeon-mcp
+on this server, following the repo's deploy documentation.
+Run it as its own service user, never as root or as me. Bind
+it to loopback and put nginx in front with the certificate you
+just set up. Read deploy/DEPLOYING.md first and tell me what
+it requires before you start.</code></pre>
+
+    <h2>How to talk to it</h2>
+    <ul>
+      <li><strong>Ask for proof, not a report.</strong> “Show me the command that proves it” beats “is it working?” — an agent that says <em>done</em> is describing its intent, not the machine.</li>
+      <li><strong>One thing at a time.</strong> A prompt that installs and configures and hardens in one pass is one you cannot review.</li>
+      <li><strong>Make it explain first.</strong> If the explanation is wrong, you have caught it before it ran.</li>
+      <li><strong>Keep the secrets out of the chat.</strong> Tokens and keys belong in files on the server. Tell it to write them there and show you the permissions, not the contents.</li>
+    </ul>
+
+    <h2>Worth knowing before you start</h2>
+    <ul class="plain">
+      <li>The agent has your sudo <span>Give it a user account, not a root login</span></li>
+      <li>$5 is the box, not the backups <span>Ask it to set up an off-box backup too</span></li>
+      <li>This host will hold mail tokens <span>Its security is your mailbox's security</span></li>
+      <li>Cheap instances are shared <span>Fine for tools; not for anything latency-critical</span></li>
+    </ul>
+
+    <div class="row">
+      <a class="b" href="https://github.com/iXanadu/pigeon-mcp">Repo</a>
+      <a class="b b2" href="how-it-works.html">How it works</a>
+    </div>
+    </main>
+
+    <aside class="testimony" aria-label="What one small server runs">
+      <p class="k">One $5 box, in practice</p>
+      <blockquote>
+        <p><strong>pigeon</strong> — Gmail for your agents, three mailboxes, a few hundred MB of RAM.</p>
+        <p><strong>A file share</strong> — hand an agent a link instead of an attachment.</p>
+        <p><strong>A memory service</strong> — so your agents remember across sessions and machines.</p>
+        <p>These are all small Python services behind one nginx. The cost of the server is not the interesting number; the interesting number is that none of them are someone else's SaaS, and none of them can change their terms on you.</p>
+      </blockquote>
+    </aside>
+    </div>
+
+    <footer>
+      <span>pigeon · Homedog.com Inc.</span>
+      <a href="privacy.html">Privacy</a>
+      <a href="terms.html">Terms</a>
+    </footer>
+  </div>
+</body>
+</html>
