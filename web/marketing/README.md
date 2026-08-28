@@ -9,6 +9,7 @@ Public pages for `pigeon.c52.com`. **Visual identity is pigeon’s own** (Fraunc
 | `for-agents.html` | Hand / agent seat instructions |
 | `privacy.html` / `terms.html` | Consent-screen HTML (source also in `docs/legal/`) |
 | `site.css` | Pigeon look |
+| `favicon.svg` | Tab icon |
 
 ## Deploy (prod-host)
 
