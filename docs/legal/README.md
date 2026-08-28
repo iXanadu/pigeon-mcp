@@ -2,9 +2,9 @@
 
 Google OAuth consent screens require Privacy Policy and Terms of Service URLs.
 
-## c52.com deployment (prod-host)
+## Reference deployment (c52.com)
 
-Live pages served by nginx on `pigeon.c52.com`:
+Live pages served on `pigeon.c52.com`:
 
 | Document | URL |
 | --- | --- |

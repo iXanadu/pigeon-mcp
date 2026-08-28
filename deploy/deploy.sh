@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# pigeon-mcp deploy for prod-host. Run by ANY operator with sudo — no admin agent
+# pigeon-mcp deploy. Run by ANY operator with sudo — no dedicated admin session
 # required, which is the point.
 #
-#   sudo -v && ./pigeon-deploy.sh            # pull main, install, restart, verify
-#   sudo -v && ./pigeon-deploy.sh <sha>      # deploy a specific commit
-#   sudo -v && ./pigeon-deploy.sh --rollback # go back to the previous deploy
+#   sudo -v && ./deploy/deploy.sh            # pull main, install, restart, verify
+#   sudo -v && ./deploy/deploy.sh <sha>      # deploy a specific commit
+#   sudo -v && ./deploy/deploy.sh --rollback # go back to the previous deploy
 #
 # It verifies AFTER restarting and AUTOMATICALLY ROLLS BACK if the new code
 # fails, so a bad push cannot leave the mailbox service down while you read a
@@ -25,7 +25,7 @@ say(){ printf "\033[36m==\033[0m %s\n" "$1"; }
 ok(){  printf "  \033[32mok\033[0m   %s\n" "$1"; }
 bad(){ printf "  \033[31mFAIL\033[0m %s\n" "$1"; }
 
-# git ops need ixanadu's GitHub key; file ops need the pigeon_user group.
+# git ops need the deploy key owner; file ops need the service group.
 g(){ sg "$SERVICE_USER" -c "git -C $APP $*"; }
 
 verify(){   # returns 0 only if the service is genuinely serving
@@ -36,7 +36,7 @@ verify(){   # returns 0 only if the service is genuinely serving
   [ "$(curl -s -o /dev/null -w '%{http_code}' -m 8 -X POST -H 'Content-Type: application/json' \
        -H 'Accept: application/json, text/event-stream' -d '{}' $ORIGIN/mcp)" = 401 ] \
     && ok "/mcp 401 unauthenticated (auth still enforced)" || { bad "/mcp did not 401 — AUTH MAY BE OPEN"; rc=1; }
-  # MUST be sudo: the tokens dir is 0750 pigeon_user, so an unprivileged find
+  # MUST be sudo: the tokens dir is often 0750 service-group, so an unprivileged find
   # returns 0 and looks exactly like "all mailboxes gone". That false negative
   # rolled back a perfectly good deploy the first time this script ran.
   local n; n=$(sudo find "$APP/tokens" -name '*.json' 2>/dev/null | wc -l)

@@ -13,7 +13,6 @@ service_account_*.json
 
 # Local-only (not for public clones)
 .engram.cfg
-BACKLOG.md
 .claude/
 
 
@@ -147,3 +146,5 @@ scripts/*.out
 scripts/*.json
 skills/
 deploy/deploy.env
+
+.hygiene-denylist

@@ -11,7 +11,7 @@ Public pages for `pigeon.c52.com`. **Visual identity is pigeon’s own** (Fraunc
 | `site.css` | Pigeon look |
 | `favicon.svg` | Tab icon |
 
-## Deploy (prod-host)
+## Deploy
 
 Serve this directory at the public host document root for `/`, and map:
 

@@ -90,8 +90,8 @@ access to your mailbox. Keep credential files readable only by the service user
 of backup trees you do not trust. Revoke at the permissions link above if a host
 is compromised.
 
-On prod-host-style hosts, secrets are often `0640` (not `0600`) so fleet-tools backup
-can read them — see your deploy runbook.
+On some production hosts, secrets are `0640` (not `0600`) so a backup agent in the
+same group can read them — see your deploy runbook.
 
 ## Legal pages (OAuth consent screen)
 
