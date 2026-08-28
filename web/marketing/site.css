@@ -37,7 +37,7 @@ body {
 }
 
 .w {
-  max-width: 44em;
+  max-width: 54em;
   margin: 0 auto;
   padding: 1.75em 1.35em 6em;
 }
@@ -56,29 +56,46 @@ body {
 .mast {
   display: flex;
   flex-direction: column;
-  gap: 0.85em;
+  gap: 0.75em;
   padding-bottom: 1.1em;
+}
+
+/* Faint rule only on inner pages (Overview uses dateline thick/thin instead) */
+.mast:not(.mast-edition) {
   border-bottom: 1px solid var(--line);
+}
+
+.mast-edition {
+  border-bottom: none;
+  padding-bottom: 0.35em;
 }
 
 .mast-top {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.85em 1.5em;
-  align-items: flex-start;
-  justify-content: space-between;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.85em 1.25em;
+  width: 100%;
 }
 
-.mast-brand-col {
-  min-width: 0;
+.mast-top .brand {
+  flex: 0 0 auto;
 }
 
-.mast-end {
+.mast-top nav {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 0.75em 1.15em;
-  margin-left: auto;
+  flex: 1 1 auto;
+  justify-content: flex-end;
+  gap: 0.35em 0.95em;
+  min-width: 0;
+  font-size: 0.88em;
+  font-weight: 400;
+}
+
+.mast-top .follow-author {
+  flex: 0 0 auto;
+  margin-left: 0;
 }
 
 .brand {
@@ -107,29 +124,30 @@ body {
   display: block;
   color: var(--muted);
   font-size: 0.82em;
-  margin: 0.35em 0 0;
+  margin: 0;
   font-weight: 400;
 }
 
-/* Overview-only dateline rail — full mast width under brand+nav */
+.tag-below {
+  margin: -0.25em 0 0;
+}
+
+/* Overview dateline — rules always full content width (gradients, not shrink-wrapped) */
 .dateline {
-  margin: 0;
-  padding: 0.55em 0;
-  border-top: 3px solid var(--ink);
-  border-bottom: 1px solid var(--ink);
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: none;
+  margin: 0.15em 0 0;
+  padding: 0.65em 0;
+  border: 0;
   font-size: 0.72em;
   letter-spacing: 0.03em;
   line-height: 1.45;
   color: var(--muted);
-  width: 100%;
-}
-
-nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35em 1.15em;
-  font-size: 0.88em;
-  font-weight: 400;
+  background:
+    linear-gradient(var(--ink), var(--ink)) top / 100% 3px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) bottom / 100% 1px no-repeat;
 }
 
 nav a { text-decoration: none; color: var(--muted); }
@@ -168,6 +186,7 @@ nav a[aria-current] {
   border-color: var(--magenta);
   text-decoration: none;
 }
+
 
 /* —— type —— */
 h1 {
