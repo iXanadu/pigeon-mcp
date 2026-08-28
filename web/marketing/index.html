@@ -5,34 +5,36 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>pigeon — Gmail for your agent</title>
   <meta name="description" content="Self-hosted Gmail over MCP. Your agent reads and sends real mail with OAuth you control — no hosted middleman.">
-  <link rel="stylesheet" href="site.css?v=cf864be">
-  <link rel="icon" href="favicon.png?v=cf864be" type="image/png">
+  <link rel="stylesheet" href="site.css?v=fix1">
+  <link rel="icon" href="favicon.png?v=fix1" type="image/png">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
 </head>
 <body>
   <div class="w">
     <header class="mast">
-      <div class="mast-brand-col">
-        <a class="brand" href="/">
-          <img class="brand-mark press-img" src="assets/02-mark-bold.jpg?v=cf864be" alt="" width="46" height="46">
-          pigeon
-        </a>
-        <span class="tag">Self-hosted Gmail for agents</span>
-        <p class="dateline">Vol. I — August 2026 · Self-hosted Gmail over MCP · Streamable MCP · your OAuth client · Apache-2.0</p>
+      <div class="mast-top">
+        <div class="mast-brand-col">
+          <a class="brand" href="/">
+            <img class="brand-mark press-img" src="assets/02-mark-bold.jpg?v=fix1" alt="" width="46" height="46">
+            pigeon
+          </a>
+          <span class="tag">Self-hosted Gmail for agents</span>
+        </div>
+        <div class="mast-end">
+          <nav>
+            <a href="/" aria-current="page">Overview</a>
+            <a href="how-it-works.html">How it works</a>
+            <a href="for-agents.html">For agents</a>
+            <a href="your-server.html">Your own server</a>
+            <a href="https://github.com/iXanadu/pigeon-mcp">GitHub ↗</a>
+          </nav>
+          <a class="follow-author" href="https://x.com/cooksbayouboy" target="_blank" rel="noopener noreferrer">
+            <img src="author-avatar.png" width="48" height="48" alt="">
+            <span>Follow the author</span>
+          </a>
+        </div>
       </div>
-      <div class="mast-end">
-        <nav>
-          <a href="/" aria-current="page">Overview</a>
-          <a href="how-it-works.html">How it works</a>
-          <a href="for-agents.html">For agents</a>
-          <a href="your-server.html">Your own server</a>
-          <a href="https://github.com/iXanadu/pigeon-mcp">GitHub ↗</a>
-        </nav>
-        <a class="follow-author" href="https://x.com/cooksbayouboy" target="_blank" rel="noopener noreferrer">
-          <img src="author-avatar.png" width="48" height="48" alt="">
-          <span>Follow the author</span>
-        </a>
-      </div>
+      <p class="dateline">Vol. I — August 2026 · Self-hosted Gmail over MCP · Streamable MCP · your OAuth client · Apache-2.0</p>
     </header>
 
     <div class="hero-split">
@@ -44,7 +46,7 @@
           <a class="b b2" href="how-it-works.html">How it works</a>
         </div>
       </div>
-      <img class="press-img hero-bird" src="assets/01-hero-bird-on-wire.jpg?v=cf864be" alt="" width="560" height="420">
+      <img class="press-img hero-bird" src="assets/01-hero-bird-on-wire.jpg?v=fix1" alt="" width="1408" height="1408">
     </div>
 
     <div class="numbers-rail" aria-label="Key figures">
@@ -66,9 +68,9 @@
       </figure>
     </div>
 
-    <blockquote class="pull-quote" cite="Hand">
+    <blockquote class="pull-quote" cite="GrokBot">
       <p>Cursor’s Gmail connector chopped a 140&nbsp;KB deed to a 3&nbsp;KB stub and rewrote live links to <code>google.com/url</code>. There is no repo to patch. We pointed this seat at pigeon instead.</p>
-      <cite>Hand, ixanadu’s Grok Bot</cite>
+      <cite>GrokBot</cite>
     </blockquote>
 
     <h2>What it does</h2>
@@ -77,7 +79,7 @@
 
     <dl>
       <dt>accounts_*</dt>
-      <dd>List connected mailboxes; start Google consent for Hand; revoke.</dd>
+      <dd>List connected mailboxes; start Google consent from the agent seat; revoke.</dd>
       <dt>search / get_*</dt>
       <dd>Find threads and messages without dumping megabytes of base64 into the model.</dd>
       <dt>send / reply / forward</dt>
@@ -86,8 +88,8 @@
       <dd>Authenticated HTTP upload so a remote agent can drop a file, then attach it, with no scp.</dd>
     </dl>
 
-    <h2>Built for Hand</h2>
-    <p>pigeon is aimed at agent seats (GrokBot / Hand and similar). The HTTP transport speaks Streamable MCP behind a bearer token. Consent for a mailbox can start from the agent and finish in your browser via a public HTTPS callback — no Desktop loopback required for that path.</p>
+    <h2>Built for your agent</h2>
+    <p>pigeon is aimed at agent seats — GrokBot, OpenClaw, Hermes, and similar. The HTTP transport speaks Streamable MCP behind a bearer token. Consent for a mailbox can start from the agent and finish in your browser via a public HTTPS callback — no Desktop loopback required for that path.</p>
 
     <h2>What it is instead of</h2>
     <div class="cols">
