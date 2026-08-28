@@ -3,7 +3,7 @@
 import asyncio
 
 from pigeon_mcp.app import build_mcp
-from pigeon_mcp.config import ensure_data_dirs, settings
+from pigeon_mcp.config import ensure_data_dirs, http_transport_security, settings
 
 
 async def _amain() -> None:
@@ -13,6 +13,7 @@ async def _amain() -> None:
         host=settings.http_host,
         port=settings.http_port,
         streamable_http_path="/mcp",
+        transport_security=http_transport_security(),
     )
 
 

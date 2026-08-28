@@ -3,6 +3,8 @@ from urllib.parse import urlparse
 
 import os
 
+from mcp.server.transport_security import TransportSecuritySettings
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -58,6 +60,15 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
+    @field_validator("outbox_root", "download_root", "tokens_dir", mode="before")
+    @classmethod
+    def _expand_user_path(cls, value: object) -> Path:
+        if isinstance(value, str):
+            value = Path(value)
+        if not isinstance(value, Path):
+            raise TypeError("path must be str or Path")
+        return value.expanduser()
+
 
 settings = Settings()
 
@@ -79,14 +90,43 @@ def ensure_data_dirs() -> None:
             parent.chmod(0o700)
 
 
-def http_public_base_url() -> str:
+def http_public_base_url(cfg: Settings | None = None) -> str:
     """Origin remote MCP clients reach — not the local bind address."""
-    explicit = settings.http_public_url.strip()
+    cfg = cfg or settings
+    explicit = cfg.http_public_url.strip()
     if explicit:
         return explicit.rstrip("/")
-    public_redirect = settings.oauth_public_redirect_uri.strip()
+    public_redirect = cfg.oauth_public_redirect_uri.strip()
     if public_redirect:
         parsed = urlparse(public_redirect)
         if parsed.scheme and parsed.netloc:
             return f"{parsed.scheme}://{parsed.netloc}"
-    return f"http://{settings.http_host}:{settings.http_port}"
+    return f"http://{cfg.http_host}:{cfg.http_port}"
+
+
+def http_transport_security(cfg: Settings | None = None) -> TransportSecuritySettings | None:
+    """Allow-list public Host/Origin when behind a reverse proxy (SDK default is loopback-only)."""
+    cfg = cfg or settings
+    if not cfg.http_public_url.strip() and not cfg.oauth_public_redirect_uri.strip():
+        return None
+
+    local = f"http://{cfg.http_host}:{cfg.http_port}".rstrip("/")
+    public = http_public_base_url(cfg).rstrip("/")
+    if public == local:
+        return None
+
+    parsed = urlparse(public)
+    if not parsed.scheme or not parsed.netloc:
+        return None
+
+    hostname = parsed.hostname or parsed.netloc.split(":")[0]
+    allowed_hosts = [hostname, f"{hostname}:*"]
+    if parsed.netloc not in allowed_hosts:
+        allowed_hosts.append(parsed.netloc)
+
+    origin = f"{parsed.scheme}://{hostname}"
+    return TransportSecuritySettings(
+        enable_dns_rebinding_protection=True,
+        allowed_hosts=allowed_hosts,
+        allowed_origins=[origin, f"{origin}:*"],
+    )

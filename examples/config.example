@@ -5,17 +5,19 @@ PIGEON_MCP_ENVIRONMENT=local
 PIGEON_MCP_LOG_LEVEL=info
 
 # Streamable HTTP (Hand / gateway). Bind loopback; put a proxy in front for remote access.
+# When proxied, set PIGEON_MCP_HTTP_PUBLIC_URL (or OAUTH_PUBLIC_REDIRECT_URI below)
+# so DNS-rebinding protection allows the public Host header — not just 127.0.0.1.
 PIGEON_MCP_HTTP_HOST=127.0.0.1
 PIGEON_MCP_HTTP_PORT=8879
 
 # Attachment paths (symlinks followed). Stage via POST /outbox/stage (bearer).
-# Pick a directory that fits THIS machine. On personal Macs, /tmp/... or ~/Outbox is fine.
+# Use absolute paths on servers (systemd cwd varies). Tilde works too — expanded at load.
 # Avoid dirs that backup/sync tools mirror into the cloud if you stage sensitive docs.
-PIGEON_MCP_OUTBOX_ROOT=~/Outbox
-PIGEON_MCP_DOWNLOAD_ROOT=~/Inbox
+PIGEON_MCP_OUTBOX_ROOT=/tmp/pigeon/Outbox
+PIGEON_MCP_DOWNLOAD_ROOT=/tmp/pigeon/Inbox
 
-# OAuth token storage (created on first accounts_add).
-PIGEON_MCP_TOKENS_DIR=~/.config/pigeon-mcp/tokens
+# OAuth token storage (created on first accounts_add). Must be absolute or ~/… (expanded).
+PIGEON_MCP_TOKENS_DIR=/home/you/.config/pigeon-mcp/tokens
 
 # Register this exact URI on your Google Desktop OAuth client
 PIGEON_MCP_OAUTH_REDIRECT_URI=http://127.0.0.1:8767/oauth/callback
