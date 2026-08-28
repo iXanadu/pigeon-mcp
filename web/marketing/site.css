@@ -91,14 +91,10 @@ body {
 .testimony li { margin: 0 0 0.35em; color: var(--muted); }
 
 .follow-author {
-  position: fixed;
-  top: 0.85rem;
-  right: 0.85rem;
-  z-index: 40;
   display: inline-flex;
   align-items: center;
   gap: 0.55em;
-  max-width: calc(100vw - 1.7rem);
+  flex: 0 0 auto;
   padding: 0.3em 0.85em 0.3em 0.3em;
   background: var(--panel);
   border: 1px solid var(--line);
@@ -129,10 +125,18 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 0.85em 1.5em;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   padding-bottom: 1.1em;
   border-bottom: 1px solid var(--line);
+}
+
+.mast-end {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75em 1.15em;
+  margin-left: auto;
 }
 
 .brand {
@@ -370,9 +374,9 @@ footer {
   h1 { font-size: 2.15em; }
   dl { grid-template-columns: 1fr; gap: 0.2em; }
   dt { margin-top: 0.65em; }
-  .w, .w-wide { padding-top: 3.4em; }
   .follow-author span { display: none; }
   .follow-author { padding: 0.28em; }
+  .mast-end { width: 100%; justify-content: space-between; }
 }
 
 @media (prefers-color-scheme: dark) {
