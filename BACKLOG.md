@@ -11,7 +11,7 @@ Open items only. Host topology and session state live in engram (`startup/next`,
 - [ ] First live **send** from the production host (OAuth/consent done; three mailboxes connected; send still unproven on prod-host)
 - [ ] Retire legacy `gmcp.c52.com` hostname (still proxied toward the old workstation path historically — confirm and remove)
 - [ ] Optional smoke: inbound `get_attachment`; large zip under Gmail’s ~25MB cap
-- [ ] Dead-simple README pass for first-time agent seats (Web-first OAuth; Desktop as footnote only — see memory `wip/oauth-docs-publish`)
+- [ ] Dead-simple README pass for first-time agent seats (Web-first OAuth; Desktop as footnote only — see memory `decision/oauth-docs-web-first`)
 - [ ] Admin: drop unit `ExecStartPost` chmod workaround now that app `#5` (no chmod `tokens_dir`) is in prod since `c48c121`
 - [ ] Owner decision: git-history scrub of old fleet crumbs (no force-push without explicit go)
 
