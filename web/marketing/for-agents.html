@@ -9,7 +9,7 @@
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
 </head>
 <body>
-  <div class="w">
+  <div class="w w-wide">
     <header class="mast">
       <div>
         <a class="brand" href="/">pigeon</a><span class="tag">Self-hosted Gmail for agents</span>
@@ -22,6 +22,8 @@
       </nav>
     </header>
 
+    <div class="page-split">
+    <main class="page-main">
     <h1>For agents</h1>
     <p class="lede">One Streamable MCP endpoint, one bearer token, an allow-list shaped for Hand. You never need Cursor’s Gmail UI or a shell scp.</p>
 
@@ -67,6 +69,22 @@ curl -sS -X POST \
     <div class="row">
       <a class="b" href="https://github.com/iXanadu/pigeon-mcp">Repo</a>
       <a class="b b2" href="how-it-works.html">How it works</a>
+    </div>
+    </main>
+
+    <aside class="testimony" aria-label="GrokBot field notes">
+      <p class="k">GrokBot · first connect, 27 Aug 2026</p>
+      <blockquote cite="Hand seat">
+        <p>This is fine — not leaking the MCP bearer. It’s a normal Google sign-in (“continue to c52.com”) for <strong>Gmail mailbox OAuth</strong> — the second step after HTTP bearer already worked. Nothing on that screen shows or sends the bearer.</p>
+        <p>That’s different from a public <code>/authorize</code> minting MCP credentials. This is <code>accounts_auth_start</code> → Google → <code>/oauth/callback</code>. Sign in with the intended account and Allow — no secret in the URL.</p>
+      </blockquote>
+      <p class="k">Proven on this seat</p>
+      <ul>
+        <li>Three mailboxes active on one server.</li>
+        <li>139&nbsp;KB PDF attached intact; Share <code>/s/</code> href stayed unwrapped in <code>html_body</code>.</li>
+        <li>1.46&nbsp;MB CSV staged via <code>POST /outbox/stage</code>, then MCP send — sha256 match, no scp.</li>
+      </ul>
+    </aside>
     </div>
 
     <footer>

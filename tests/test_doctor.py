@@ -58,6 +58,21 @@ def test_ensure_data_dirs_recreates_tmp_tree(tmp_path, monkeypatch):
         shutil.rmtree(real, ignore_errors=True)
 
 
+def test_ensure_data_dirs_preserves_tokens_dir_mode(tmp_path, monkeypatch):
+    """Operator tokens dir (0750 + group backup) must not be forced to 0700 on boot."""
+    import stat
+
+    from pigeon_mcp.config import ensure_data_dirs, settings
+
+    tokens = tmp_path / "tokens"
+    tokens.mkdir(mode=0o750)
+    monkeypatch.setattr(settings, "outbox_root", tmp_path / "Outbox")
+    monkeypatch.setattr(settings, "download_root", tmp_path / "Inbox")
+    monkeypatch.setattr(settings, "tokens_dir", tokens)
+    ensure_data_dirs()
+    assert stat.S_IMODE(tokens.stat().st_mode) == 0o750
+
+
 def test_ensure_data_dirs_repairs_preexisting_755(monkeypatch):
     """chmod runs even when mkdir is a no-op — repairs README mkdir -p at 755."""
     import shutil
