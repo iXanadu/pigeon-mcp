@@ -45,6 +45,8 @@ class AccountToken:
     scopes: str = ""
     status: str = STATUS_ACTIVE
     last_error: str = ""
+    # OAuth client that minted the refresh token (Desktop vs Web). Empty on legacy files.
+    client_id: str = ""
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> AccountToken:
@@ -56,6 +58,7 @@ class AccountToken:
             scopes=data.get("scopes", ""),
             status=data.get("status", STATUS_ACTIVE),
             last_error=data.get("last_error", ""),
+            client_id=data.get("client_id", ""),
         )
 
     def to_dict(self) -> dict[str, Any]:

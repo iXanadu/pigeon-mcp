@@ -6,6 +6,7 @@ Open items only. Host topology and session state live in engram (`startup/next`,
 
 ## Open
 
+- [ ] **BLOCKING:** OAuth refresh empty-Desktop bug — peer audit PASS; awaiting prod-host deploy + Hand `accounts_list` verify (no re-consent expected)
 - [ ] Public gateway: wire `/healthz` (loopback verify is green; `https://pigeon.c52.com/healthz` still 404)
 - [ ] Public gateway: serve `/favicon.svg` (file is in `pigeon-static`; URL still 404 — nginx location and/or CF purge)
 - [ ] First live **send** from the production host (OAuth/consent done; three mailboxes connected; send still unproven on prod-host)

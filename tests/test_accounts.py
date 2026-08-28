@@ -247,3 +247,101 @@ async def test_accounts_auth_start_returns_public_url(token_store, monkeypatch):
     assert "accounts.google.com" in result["auth_url"]
     assert "code_challenge=" in result["auth_url"]
     assert result["state"]
+
+
+@respx.mock
+async def test_refresh_uses_web_client_when_desktop_empty(token_store, monkeypatch):
+    """Web-only prod: Hand mints with WEB_*; refresh must not POST blank Desktop slots."""
+    monkeypatch.setattr(settings, "google_client_id", "")
+    monkeypatch.setattr(settings, "google_client_secret", "")
+    monkeypatch.setattr(settings, "google_web_client_id", "web-id")
+    monkeypatch.setattr(settings, "google_web_client_secret", "web-secret")
+    token_store.save(
+        AccountToken(
+            email="webonly@gmail.com",
+            refresh_token="rt-web",
+            access_token="old",
+            status=STATUS_ACTIVE,
+            client_id="web-id",
+        )
+    )
+    route = respx.post("https://oauth2.googleapis.com/token").mock(
+        return_value=httpx.Response(
+            200, json={"access_token": "new-at", "expires_in": 3600}
+        )
+    )
+    out = await refresh_access_token(token_store, "webonly@gmail.com")
+    assert out is not None
+    assert out.status == STATUS_ACTIVE
+    assert out.access_token == "new-at"
+    from urllib.parse import parse_qs
+
+    form = parse_qs(route.calls.last.request.content.decode())
+    assert form["client_id"] == ["web-id"]
+    assert form["client_secret"] == ["web-secret"]
+    assert form["refresh_token"] == ["rt-web"]
+
+
+@respx.mock
+async def test_refresh_heals_needs_auth_from_non_invalid_grant(token_store, monkeypatch):
+    """Prod mass-death left needs_auth + Client error 400; refresh tokens still valid."""
+    monkeypatch.setattr(settings, "google_client_id", "")
+    monkeypatch.setattr(settings, "google_client_secret", "")
+    monkeypatch.setattr(settings, "google_web_client_id", "web-id")
+    monkeypatch.setattr(settings, "google_web_client_secret", "web-secret")
+    token_store.save(
+        AccountToken(
+            email="stuck@gmail.com",
+            refresh_token="rt-ok",
+            access_token="expired",
+            status=STATUS_NEEDS_AUTH,
+            last_error="Client error '400 Bad Request' for url 'https://oauth2.googleapis.com/token'",
+            client_id="",
+        )
+    )
+    respx.post("https://oauth2.googleapis.com/token").mock(
+        return_value=httpx.Response(
+            200, json={"access_token": "healed", "expires_in": 3600}
+        )
+    )
+    out = await refresh_access_token(token_store, "stuck@gmail.com")
+    assert out is not None
+    assert out.status == STATUS_ACTIVE
+    assert out.access_token == "healed"
+    assert out.last_error == ""
+    assert out.client_id == "web-id"
+
+
+@respx.mock
+async def test_refresh_legacy_token_prefers_web_on_hand_host(token_store, monkeypatch):
+    """Both clients configured; legacy Hand tokens without client_id must refresh with Web."""
+    monkeypatch.setattr(settings, "google_client_id", "desk-id")
+    monkeypatch.setattr(settings, "google_client_secret", "desk-secret")
+    monkeypatch.setattr(settings, "google_web_client_id", "web-id")
+    monkeypatch.setattr(settings, "google_web_client_secret", "web-secret")
+    monkeypatch.setattr(
+        settings, "oauth_public_redirect_uri", "https://pigeon.example/oauth/callback"
+    )
+    token_store.save(
+        AccountToken(
+            email="legacy@gmail.com",
+            refresh_token="rt-legacy",
+            access_token="old",
+            status=STATUS_NEEDS_AUTH,
+            last_error="Client error '400 Bad Request'",
+            client_id="",
+        )
+    )
+    route = respx.post("https://oauth2.googleapis.com/token").mock(
+        return_value=httpx.Response(
+            200, json={"access_token": "fixed", "expires_in": 3600}
+        )
+    )
+    out = await refresh_access_token(token_store, "legacy@gmail.com")
+    assert out is not None
+    assert out.status == STATUS_ACTIVE
+    from urllib.parse import parse_qs
+
+    form = parse_qs(route.calls.last.request.content.decode())
+    assert form["client_id"] == ["web-id"]
+    assert form["client_secret"] == ["web-secret"]

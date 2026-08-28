@@ -70,6 +70,37 @@ def web_client_credentials() -> tuple[str, str]:
     return cid, secret
 
 
+def credentials_for_refresh(token: AccountToken) -> tuple[str, str]:
+    """Return the client id/secret that minted this refresh token.
+
+    Hand mints with the Web client; stdio with Desktop. Refresh must use the same
+    pair — empty Desktop slots + Web-only prod was posting blank client_id and
+    marking every mailbox needs_auth when the access token expired (~1h).
+    """
+    web_id = (settings.google_web_client_id or "").strip()
+    web_secret = settings.google_web_client_secret or ""
+    desk_id = (settings.google_client_id or "").strip()
+    desk_secret = settings.google_client_secret or ""
+    stored = (token.client_id or "").strip()
+
+    if stored and web_id and stored == web_id:
+        if not web_secret:
+            raise RuntimeError("Google OAuth web client secret not configured")
+        return web_id, web_secret
+    if stored and desk_id and stored == desk_id:
+        if not desk_secret:
+            raise RuntimeError("Google OAuth Desktop client secret not configured")
+        return desk_id, desk_secret
+    # Legacy token files (no client_id): Hand/HTTP prod minted via Web client.
+    if settings.oauth_public_redirect_uri.strip() and web_id and web_secret:
+        return web_id, web_secret
+    if desk_id and desk_secret:
+        return desk_id, desk_secret
+    if web_id and web_secret:
+        return web_id, web_secret
+    raise RuntimeError("Google OAuth client id/secret not configured")
+
+
 def build_auth_url(
     redirect_uri: str,
     *,
@@ -161,32 +192,47 @@ async def refresh_access_token(store: TokenStore, email: str) -> AccountToken | 
     token = store.load(email)
     if not token or not token.refresh_token:
         return None
-    if token.status == STATUS_NEEDS_AUTH:
+    # Only true Google revoke locks the account. Other 400s (e.g. empty client_id)
+    # used to mark needs_auth and then never retry — heal those on the next refresh.
+    if token.status == STATUS_NEEDS_AUTH and token.last_error == "invalid_grant":
         return token
+
+    try:
+        client_id, client_secret = credentials_for_refresh(token)
+    except RuntimeError as exc:
+        store.mark_needs_auth(email, str(exc)[:500])
+        return store.load(email)
 
     data = {
         "grant_type": "refresh_token",
         "refresh_token": token.refresh_token,
-        "client_id": settings.google_client_id,
-        "client_secret": settings.google_client_secret,
+        "client_id": client_id,
+        "client_secret": client_secret,
     }
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
             r = await client.post(GOOGLE_TOKEN_URL, data=data)
             if r.status_code == 400 and "invalid_grant" in r.text:
                 store.mark_needs_auth(email, "invalid_grant")
-                refreshed = store.load(email)
-                return refreshed
+                return store.load(email)
             r.raise_for_status()
             body = r.json()
     except httpx.HTTPStatusError as exc:
-        if exc.response.status_code == 400 and "invalid_grant" in exc.response.text:
+        err_body = (exc.response.text or "")[:500]
+        if exc.response.status_code == 400 and "invalid_grant" in err_body:
             store.mark_needs_auth(email, "invalid_grant")
             return store.load(email)
-        store.mark_needs_auth(email, str(exc)[:500])
+        # Config/transient errors: record body, do not permanently lock the mailbox.
+        locked = store.load(email)
+        if locked:
+            locked.last_error = err_body or str(exc)[:500]
+            store.save(locked)
         return store.load(email)
     except Exception as exc:
-        store.mark_needs_auth(email, str(exc)[:500])
+        locked = store.load(email)
+        if locked:
+            locked.last_error = str(exc)[:500]
+            store.save(locked)
         return store.load(email)
 
     token.access_token = body.get("access_token", token.access_token)
@@ -195,6 +241,8 @@ async def refresh_access_token(store: TokenStore, email: str) -> AccountToken | 
     token.expires_at = _expires_at_from_response(body)
     token.status = STATUS_ACTIVE
     token.last_error = ""
+    if client_id and not token.client_id:
+        token.client_id = client_id
     store.save(token)
     return token
 
@@ -204,11 +252,12 @@ async def ensure_fresh_token(store: TokenStore, email: str) -> AccountToken | No
     token = store.load(email)
     if not token:
         return None
-    if token.status == STATUS_NEEDS_AUTH:
+    if token.status == STATUS_NEEDS_AUTH and token.last_error == "invalid_grant":
         return token
 
     remaining = TokenStore.expires_in_seconds(token.expires_at)
-    if remaining is None or remaining <= 120:
+    # needs_auth from a non-invalid_grant error: always retry refresh (heal path).
+    if token.status == STATUS_NEEDS_AUTH or remaining is None or remaining <= 120:
         return await refresh_access_token(store, email)
     return token
 
@@ -247,6 +296,7 @@ async def complete_oauth(
         expires_at=_expires_at_from_response(body),
         scopes=body.get("scope") or GMAIL_SCOPES,
         status=STATUS_ACTIVE,
+        client_id=client_id,
     )
     store.save(token)
     return token
