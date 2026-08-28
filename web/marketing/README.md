@@ -4,9 +4,9 @@ Public pages for `pigeon.c52.com`. **Visual identity:** tiding press, different 
 
 | File | Role |
 | --- | --- |
-| `index.html` | Overview landing (dateline, hero, numbers rail, Hand pull quote) |
+| `index.html` | Overview landing (dateline, hero, numbers rail, GrokBot pull quote) |
 | `how-it-works.html` | OAuth → MCP → stage → send |
-| `for-agents.html` | Hand / agent seat instructions |
+| `for-agents.html` | Agent seat instructions |
 | `your-server.html` | $5 VPS on-ramp (timeline, Linode shot, undo grid) |
 | `privacy.html` / `terms.html` | Consent-screen HTML (source also in `docs/legal/`) |
 | `site.css` | Shared styles |
