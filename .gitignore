@@ -122,6 +122,10 @@ photos/
 *.svg
 !web/marketing/favicon.svg
 !web/marketing/author-avatar.png
+!web/marketing/favicon.png
+!web/marketing/apple-touch-icon.png
+!web/marketing/assets/
+!web/marketing/assets/**
 *.webp
 
 # Temporary files
@@ -150,3 +154,4 @@ skills/
 deploy/deploy.env
 
 .hygiene-denylist
+docs/specs/*.zip

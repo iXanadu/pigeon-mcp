@@ -24,9 +24,20 @@ VHOST="${NGINX_VHOST:-/etc/nginx/sites-available/pigeon_c52_prod}"
 # README.md is repo documentation, not a web page. Copy assets explicitly.
 sudo install -o www-data -g www-data -m 0644 "$SRC"/*.html "$SRC"/*.css "$DST"/
 # Favicon + author avatar (svg/ico/png) if present
-for f in "$SRC"/favicon.svg "$SRC"/favicon.ico "$SRC"/favicon.png "$SRC"/author-avatar.png; do
+for f in "$SRC"/favicon.svg "$SRC"/favicon.ico "$SRC"/favicon.png "$SRC"/apple-touch-icon.png "$SRC"/author-avatar.png; do
   [ -f "$f" ] && sudo install -o www-data -g www-data -m 0644 "$f" "$DST"/
 done
+# Engraved marketing images (hero, spots, screenshots)
+if [ -d "$SRC/assets" ]; then
+  sudo mkdir -p "$DST/assets"
+  for f in "$SRC"/assets/*; do
+    base=$(basename "$f")
+    case "$base" in
+      07-lockup-navy-offsite-only.jpg) continue ;;  # GitHub/social only — never on site
+    esac
+    sudo install -o www-data -g www-data -m 0644 "$f" "$DST"/assets/
+  done
+fi
 sudo rm -f "$DST"/README.md
 
 echo "deployed:"; ls -1 "$DST" | sed 's/^/  /'

@@ -6,33 +6,86 @@
   <title>Your own server — pigeon</title>
   <meta name="description" content="A $5/month VPS runs pigeon and other small self-hosted tools. Ten minutes of setup by hand, then you prompt an agent for the rest.">
   <link rel="stylesheet" href="site.css">
+  <link rel="icon" href="favicon.png" type="image/png">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
 </head>
 <body>
   <div class="w w-wide">
     <header class="mast">
-      <div>
-        <a class="brand" href="/">pigeon</a><span class="tag">Self-hosted Gmail for agents</span>
+      <div class="mast-brand-col">
+        <a class="brand" href="/">
+          <img class="brand-mark press-img" src="assets/02-mark-bold.jpg" alt="" width="46" height="46">
+          pigeon
+        </a>
+        <span class="tag">Self-hosted Gmail for agents</span>
       </div>
       <div class="mast-end">
-      <nav>
-        <a href="/">Overview</a>
-        <a href="how-it-works.html">How it works</a>
-        <a href="for-agents.html">For agents</a>
-        <a href="your-server.html" aria-current="page">Your own server</a>
-        <a href="https://github.com/iXanadu/pigeon-mcp">GitHub ↗</a>
-      </nav>
-    <a class="follow-author" href="https://x.com/cooksbayouboy" target="_blank" rel="noopener noreferrer">
-      <img src="author-avatar.png" width="48" height="48" alt="">
-      <span>Follow the author</span>
-    </a>
-    </div>
+        <nav>
+          <a href="/">Overview</a>
+          <a href="how-it-works.html">How it works</a>
+          <a href="for-agents.html">For agents</a>
+          <a href="your-server.html" aria-current="page">Your own server</a>
+          <a href="https://github.com/iXanadu/pigeon-mcp">GitHub ↗</a>
+        </nav>
+        <a class="follow-author" href="https://x.com/cooksbayouboy" target="_blank" rel="noopener noreferrer">
+          <img src="author-avatar.png" width="48" height="48" alt="">
+          <span>Follow the author</span>
+        </a>
+      </div>
     </header>
 
     <div class="page-split">
     <main class="page-main">
     <h1>Your own server</h1>
-    <p class="lede">pigeon is small. So are the other tools worth self-hosting. One cheap VPS runs several of them, and you do not need to become a sysadmin first — you do about ten minutes of work by hand, then you prompt an agent for the rest.</p>
+    <p class="lede">pigeon is small. So are the other tools worth self-hosting. One cheap VPS runs several of them — you do about ten minutes of work by hand, then you prompt an agent for the rest.</p>
+
+    <div class="timeline-bar" aria-label="Setup time: manual vs prompted">
+      <div class="timeline-track">
+        <div class="timeline-seg" title="Create the instance"></div>
+        <div class="timeline-seg" title="DNS record"></div>
+        <div class="timeline-seg" title="Update and make a user"></div>
+        <div class="timeline-seg" title="Start the agent"></div>
+        <div class="timeline-seg tint" title="Prompted setup"></div>
+      </div>
+      <div class="timeline-steps">
+        <span>Create instance</span>
+        <span>DNS</span>
+        <span>User + update</span>
+        <span>Start agent</span>
+        <span>Hardening, nginx, cert, pigeon…</span>
+      </div>
+      <div class="timeline-labels">
+        <p class="hand">≈ 10 minutes by hand</p>
+        <p class="prompted">prompted, reviewed, not typed</p>
+      </div>
+    </div>
+
+    <div class="linode-row">
+      <div class="linode-shot-wrap">
+        <img src="assets/08-shot-linode-plans.png" alt="Linode plan picker with Nanode 1 GB selected" width="800" height="220">
+      </div>
+      <p class="linode-statement">One box. $5 a month.</p>
+    </div>
+
+    <figure class="shot">
+      <img class="press-img" src="assets/09-shot-cgtop.png" alt="systemd-cgtop on a live server" width="960" height="540">
+      <figcaption>pigeon is <code>uvicorn_gmcp_prod</code> at 70.5&nbsp;MB — mail, chat, file share, sip-phone, redis and fail2ban on one box, none of them large.</figcaption>
+    </figure>
+
+    <div class="undo-grid">
+      <article>
+        <h3>If you wreck it — Destroy it.</h3>
+        <p>Delete the instance and create another. Nothing on the box can’t be rebuilt by running the same four prompts again.</p>
+      </article>
+      <article>
+        <h3>What a mistake costs — $0.0075/hr.</h3>
+        <p>Linode prints the hourly rate on the tile. An instance you kill after twenty minutes costs a quarter of a cent.</p>
+      </article>
+      <article>
+        <h3>What you can’t lose — Your mail.</h3>
+        <p>Gmail holds the mail; the box holds a token. Revoke it in your Google account and the wrecked server is inert.</p>
+      </article>
+    </div>
 
     <h2>What you are buying</h2>
     <p>Any provider with a small Linux instance works. Around <strong>$5&nbsp;/&nbsp;€5 a month</strong> buys roughly 1–4&nbsp;GB of RAM, a shared vCPU and 20–50&nbsp;GB of disk. Prices and tiers move constantly — treat the names below as where to look, not as a quote.</p>
@@ -117,6 +170,14 @@ rsync --archive --chown=you:you ~/.ssh /home/you/</code></pre>
       </li>
     </ol>
 
+    <h2>Worth knowing before you start</h2>
+    <ul class="plain">
+      <li>The agent has your sudo <span>Give it a user account, not a root login</span></li>
+      <li>$5 is the box, not the backups <span>Ask it to set up an off-box backup too</span></li>
+      <li>This host will hold mail tokens <span>Its security is your mailbox's security</span></li>
+      <li>Cheap instances are shared <span>Fine for tools; not for anything latency-critical</span></li>
+    </ul>
+
     <h2>Then you prompt for the rest</h2>
     <p>This is the actual technique: you are not learning to administer a server, you are learning to <em>direct</em> one. Work in small steps, ask for an explanation before a change, and ask for evidence after it.</p>
     <p>Give the agent sudo through your user — <strong>not a root login</strong>. An agent with sudo can do anything you can do, which is the point and also the risk. Small steps keep it reviewable.</p>
@@ -155,14 +216,6 @@ it requires before you start.</code></pre>
       <li><strong>One thing at a time.</strong> A prompt that installs and configures and hardens in one pass is one you cannot review.</li>
       <li><strong>Make it explain first.</strong> If the explanation is wrong, you have caught it before it ran.</li>
       <li><strong>Keep the secrets out of the chat.</strong> Tokens and keys belong in files on the server. Tell it to write them there and show you the permissions, not the contents.</li>
-    </ul>
-
-    <h2>Worth knowing before you start</h2>
-    <ul class="plain">
-      <li>The agent has your sudo <span>Give it a user account, not a root login</span></li>
-      <li>$5 is the box, not the backups <span>Ask it to set up an off-box backup too</span></li>
-      <li>This host will hold mail tokens <span>Its security is your mailbox's security</span></li>
-      <li>Cheap instances are shared <span>Fine for tools; not for anything latency-critical</span></li>
     </ul>
 
     <div class="row">

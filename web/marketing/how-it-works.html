@@ -6,59 +6,88 @@
   <title>How it works — pigeon</title>
   <meta name="description" content="OAuth, HTTP MCP, stage, send. How pigeon connects an agent seat to Gmail.">
   <link rel="stylesheet" href="site.css">
+  <link rel="icon" href="favicon.png" type="image/png">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
 </head>
 <body>
-  <div class="w">
+  <div class="w w-wide">
     <header class="mast">
-      <div>
-        <a class="brand" href="/">pigeon</a><span class="tag">Self-hosted Gmail for agents</span>
+      <div class="mast-brand-col">
+        <a class="brand" href="/">
+          <img class="brand-mark press-img" src="assets/02-mark-bold.jpg" alt="" width="46" height="46">
+          pigeon
+        </a>
+        <span class="tag">Self-hosted Gmail for agents</span>
       </div>
       <div class="mast-end">
-      <nav>
-        <a href="/">Overview</a>
-        <a href="how-it-works.html" aria-current="page">How it works</a>
-        <a href="for-agents.html">For agents</a>
-        <a href="your-server.html">Your own server</a>
-        <a href="https://github.com/iXanadu/pigeon-mcp">GitHub ↗</a>
-      </nav>
-    <a class="follow-author" href="https://x.com/cooksbayouboy" target="_blank" rel="noopener noreferrer">
-      <img src="author-avatar.png" width="48" height="48" alt="">
-      <span>Follow the author</span>
-    </a>
-    </div>
+        <nav>
+          <a href="/">Overview</a>
+          <a href="how-it-works.html" aria-current="page">How it works</a>
+          <a href="for-agents.html">For agents</a>
+          <a href="your-server.html">Your own server</a>
+          <a href="https://github.com/iXanadu/pigeon-mcp">GitHub ↗</a>
+        </nav>
+        <a class="follow-author" href="https://x.com/cooksbayouboy" target="_blank" rel="noopener noreferrer">
+          <img src="author-avatar.png" width="48" height="48" alt="">
+          <span>Follow the author</span>
+        </a>
+      </div>
     </header>
 
-    <h1>How it works</h1>
-    <p class="lede">Four surfaces: Google OAuth you own, an MCP HTTP endpoint, a stage upload for files, and Gmail itself.</p>
+    <div class="page-head-with-spot">
+      <img class="spot press-img" src="assets/05-spot-feather.png" alt="" width="130" height="130">
+      <h1>How it works</h1>
+      <p class="lede">Four surfaces: Google OAuth you own, an MCP HTTP endpoint, a stage upload for files, and Gmail itself.</p>
+    </div>
 
-    <ol class="steps">
+    <ol class="steps-across">
       <li>
+        <span class="step-num">1</span>
         <h3>You create the Google OAuth client</h3>
         <p>Web application client, redirect <code>https://&lt;your-host&gt;/oauth/callback</code>. Publish the consent screen to <em>In production</em> (Testing refresh tokens die in seven days). Details in the OAuth guide.</p>
       </li>
       <li>
+        <span class="step-num">2</span>
         <h3>The agent connects a mailbox</h3>
         <p>Hand calls <code>accounts_auth_start</code>, you open the returned URL, Allow the account. Tokens land on the server as <code>gmail-token-*.json</code>.</p>
       </li>
       <li>
+        <span class="step-num">3</span>
         <h3>Day-to-day mail over MCP</h3>
         <p>Search, read, label, draft, send. HTTP requires <code>Authorization: Bearer …</code>. Account address is an argument on every mail tool.</p>
       </li>
       <li>
+        <span class="step-num">4</span>
         <h3>Attachments without scp</h3>
         <p>Agent <code>POST</code>s bytes to <code>/outbox/stage</code> (same bearer), gets a path under the outbox root, then passes that path to <code>send</code> / <code>reply</code> / <code>forward</code>.</p>
       </li>
     </ol>
 
     <h2>Public routes (typical gateway)</h2>
-    <ul class="plain">
-      <li><code>/mcp</code> <span>Streamable MCP — bearer required</span></li>
-      <li><code>/oauth/callback</code> <span>Google redirect — state + PKCE, no bearer</span></li>
-      <li><code>/outbox/stage</code> <span>Upload for later attach — bearer required</span></li>
-      <li><code>/healthz</code> <span>Unauthenticated liveness on the app bind (deploy verifies); gateway should proxy it publicly</span></li>
-      <li><code>/privacy</code> · <code>/terms</code> <span>Consent-screen URLs</span></li>
-    </ul>
+    <table class="routes-table">
+      <tbody>
+        <tr>
+          <th scope="row"><code>/mcp</code></th>
+          <td>Streamable MCP — bearer required</td>
+        </tr>
+        <tr>
+          <th scope="row"><code>/oauth/callback</code></th>
+          <td>Google redirect — state + PKCE, no bearer</td>
+        </tr>
+        <tr>
+          <th scope="row"><code>/outbox/stage</code></th>
+          <td>Upload for later attach — bearer required</td>
+        </tr>
+        <tr>
+          <th scope="row"><code>/healthz</code></th>
+          <td>Unauthenticated liveness on the app bind (deploy verifies); gateway should proxy it publicly</td>
+        </tr>
+        <tr>
+          <th scope="row"><code>/privacy</code> · <code>/terms</code></th>
+          <td>Consent-screen URLs</td>
+        </tr>
+      </tbody>
+    </table>
 
     <h2>Where files live</h2>
     <p>Outbox and download roots are configurable. On a personal host, <code>/tmp/…</code> with <code>0700</code> self-heal on start is fine for transient staging. Tokens stay next to the service (or under a swept prod tree) — never in the agent transcript.</p>
