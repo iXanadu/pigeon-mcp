@@ -36,4 +36,4 @@ Open items only. Host topology and session state live in engram (`startup/next`,
 - `README.md` — operator setup
 - `docs/specs/pigeon-mcp-spec.md` — acceptance criteria
 - `deploy/DEPLOYING.md` — operator deploy contract (`sudo -n true`, not `sudo -v`)
-- engram `startup/next`, `session/2026-08-28-marketing-stable-wrap`
+- engram `startup/next`, `session/2026-08-28-pm-wrap`, `session/2026-08-28-marketing-stable-wrap`
