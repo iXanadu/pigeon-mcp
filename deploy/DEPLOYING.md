@@ -19,6 +19,10 @@ Prefer `sudo -n true` over `sudo -v`. On hosts with `Defaults use_pty`, `sudo -v
 fails in non-interactive SSH (BatchMode) even when the operator has NOPASSWD —
 it still demands a TTY. `sudo -n` succeeds and is what agent/operator automation needs.
 
+You can also omit the prefix entirely: the script calls `sudo` only where it needs
+to. With NOPASSWD for the operator it runs unattended; without it, use an
+interactive shell.
+
 `deploy.sh` fetches, checks out, reinstalls into the virtualenv, restarts the
 unit, and then **verifies — rolling back automatically if verification fails.**
 A bad push must never leave a mail service down while someone reads a traceback.

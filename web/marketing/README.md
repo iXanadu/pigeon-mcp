@@ -7,6 +7,7 @@ Public pages for `pigeon.c52.com`. **Visual identity is pigeon’s own** (Fraunc
 | `index.html` | Overview landing |
 | `how-it-works.html` | OAuth → MCP → stage → send |
 | `for-agents.html` | Hand / agent seat instructions |
+| `your-server.html` | $5 VPS on-ramp |
 | `privacy.html` / `terms.html` | Consent-screen HTML (source also in `docs/legal/`) |
 | `site.css` | Pigeon look |
 | `favicon.svg` | Tab icon |
@@ -18,6 +19,7 @@ Serve this directory at the public host document root for `/`, and map:
 - `/` → `index.html`
 - `/how-it-works` → `how-it-works.html` (or keep `.html`)
 - `/for-agents` → `for-agents.html`
+- `/your-server` → `your-server.html`
 - `/privacy` → `privacy.html`
 - `/terms` → `terms.html`
 
