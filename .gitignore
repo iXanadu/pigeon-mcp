@@ -146,3 +146,4 @@ scripts/*.log
 scripts/*.out
 scripts/*.json
 skills/
+deploy/deploy.env
