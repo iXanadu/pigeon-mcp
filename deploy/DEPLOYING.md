@@ -10,10 +10,14 @@ somewhere else.
 
 ```bash
 cp deploy/deploy.env.example deploy/deploy.env   # edit for this host
-sudo -v && ./deploy/deploy.sh                    # latest origin/main
-sudo -v && ./deploy/deploy.sh <sha>              # a specific commit
-sudo -v && ./deploy/deploy.sh --rollback         # previous deploy
+sudo -n true && ./deploy/deploy.sh               # latest origin/main
+sudo -n true && ./deploy/deploy.sh <sha>         # a specific commit
+sudo -n true && ./deploy/deploy.sh --rollback    # previous deploy
 ```
+
+Prefer `sudo -n true` over `sudo -v`. On hosts with `Defaults use_pty`, `sudo -v`
+fails in non-interactive SSH (BatchMode) even when the operator has NOPASSWD —
+it still demands a TTY. `sudo -n` succeeds and is what agent/operator automation needs.
 
 `deploy.sh` fetches, checks out, reinstalls into the virtualenv, restarts the
 unit, and then **verifies — rolling back automatically if verification fails.**

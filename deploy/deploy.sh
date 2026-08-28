@@ -2,9 +2,11 @@
 # pigeon-mcp deploy. Run by ANY operator with sudo — no dedicated admin session
 # required, which is the point.
 #
-#   sudo -v && ./deploy/deploy.sh            # pull main, install, restart, verify
-#   sudo -v && ./deploy/deploy.sh <sha>      # deploy a specific commit
-#   sudo -v && ./deploy/deploy.sh --rollback # go back to the previous deploy
+#   sudo -n true && ./deploy/deploy.sh            # pull main, install, restart, verify
+#   sudo -n true && ./deploy/deploy.sh <sha>      # deploy a specific commit
+#   sudo -n true && ./deploy/deploy.sh --rollback # go back to the previous deploy
+#
+# Use sudo -n, not sudo -v: use_pty + BatchMode makes -v demand a TTY even with NOPASSWD.
 #
 # It verifies AFTER restarting and AUTOMATICALLY ROLLS BACK if the new code
 # fails, so a bad push cannot leave the mailbox service down while you read a
