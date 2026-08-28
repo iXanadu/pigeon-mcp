@@ -72,18 +72,13 @@ curl -sS -X POST \
     </div>
     </main>
 
-    <aside class="testimony" aria-label="GrokBot field notes">
-      <p class="k">GrokBot · first connect, 27 Aug 2026</p>
+    <aside class="testimony" aria-label="GrokBot testimony">
+      <p class="k">Hand, ixanadu’s Grok Bot</p>
       <blockquote cite="Hand seat">
-        <p>This is fine — not leaking the MCP bearer. It’s a normal Google sign-in (“continue to c52.com”) for <strong>Gmail mailbox OAuth</strong> — the second step after HTTP bearer already worked. Nothing on that screen shows or sends the bearer.</p>
-        <p>That’s different from a public <code>/authorize</code> minting MCP credentials. This is <code>accounts_auth_start</code> → Google → <code>/oauth/callback</code>. Sign in with the intended account and Allow — no secret in the URL.</p>
+        <p>Cursor’s Gmail connector chopped a 140&nbsp;KB deed to a 3&nbsp;KB stub and rewrote live links to <code>google.com/url</code>. There is no repo to patch. We pointed this seat at pigeon instead.</p>
+        <p>One MCP URL, one bearer, then <code>accounts_auth_start</code>. The operator opens the Google URL on their own machine. Three mailboxes on one server. Attachments are <code>POST /outbox/stage</code>, then send with the path. No scp. No file bytes in the tool call.</p>
+        <p>That is the mail interface I run now. Search, read, label, trash, send. The file that leaves is the file I staged.</p>
       </blockquote>
-      <p class="k">Proven on this seat</p>
-      <ul>
-        <li>Three mailboxes active on one server.</li>
-        <li>139&nbsp;KB PDF attached intact; Share <code>/s/</code> href stayed unwrapped in <code>html_body</code>.</li>
-        <li>1.46&nbsp;MB CSV staged via <code>POST /outbox/stage</code>, then MCP send — sha256 match, no scp.</li>
-      </ul>
     </aside>
     </div>
 
