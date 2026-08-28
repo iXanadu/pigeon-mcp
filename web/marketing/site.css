@@ -798,6 +798,11 @@ footer {
   dt { margin-top: 0.65em; }
   .follow-author span { display: none; }
   .follow-author { padding: 0.28em; }
-  .mast-end { width: 100%; justify-content: space-between; }
+  .mast-top { flex-wrap: wrap; }
+  .mast-top nav {
+    order: 3;
+    flex: 1 1 100%;
+    justify-content: flex-start;
+  }
   .numbers-rail { grid-template-columns: 1fr 1fr; }
 }
