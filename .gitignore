@@ -121,6 +121,7 @@ photos/
 *.gif
 *.bmp
 *.svg
+!web/marketing/favicon.svg
 *.webp
 
 # Temporary files
