@@ -120,6 +120,8 @@ photos/
 *.gif
 *.bmp
 *.svg
+!web/marketing/favicon.svg
+!web/marketing/author-avatar.png
 *.webp
 
 # Temporary files

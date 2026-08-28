@@ -11,6 +11,7 @@ Public pages for `pigeon.c52.com`. **Visual identity is pigeon’s own** (Fraunc
 | `privacy.html` / `terms.html` | Consent-screen HTML (source also in `docs/legal/`) |
 | `site.css` | Pigeon look |
 | `favicon.svg` | Tab icon |
+| `author-avatar.png` | Circular “Follow the author” chip (X) |
 
 ## Deploy
 

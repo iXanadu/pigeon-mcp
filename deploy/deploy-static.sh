@@ -23,8 +23,8 @@ VHOST="${NGINX_VHOST:-/etc/nginx/sites-available/pigeon_c52_prod}"
 
 # README.md is repo documentation, not a web page. Copy assets explicitly.
 sudo install -o www-data -g www-data -m 0644 "$SRC"/*.html "$SRC"/*.css "$DST"/
-# Favicon (svg/ico/png) if present
-for f in "$SRC"/favicon.svg "$SRC"/favicon.ico "$SRC"/favicon.png; do
+# Favicon + author avatar (svg/ico/png) if present
+for f in "$SRC"/favicon.svg "$SRC"/favicon.ico "$SRC"/favicon.png "$SRC"/author-avatar.png; do
   [ -f "$f" ] && sudo install -o www-data -g www-data -m 0644 "$f" "$DST"/
 done
 sudo rm -f "$DST"/README.md

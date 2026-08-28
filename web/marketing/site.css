@@ -90,6 +90,41 @@ body {
 
 .testimony li { margin: 0 0 0.35em; color: var(--muted); }
 
+.follow-author {
+  position: fixed;
+  top: 0.85rem;
+  right: 0.85rem;
+  z-index: 40;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55em;
+  max-width: calc(100vw - 1.7rem);
+  padding: 0.3em 0.85em 0.3em 0.3em;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  text-decoration: none;
+  color: var(--ink);
+  font-size: 0.82em;
+  font-weight: 500;
+  line-height: 1.2;
+  backdrop-filter: blur(8px);
+}
+.follow-author img {
+  width: 2.35em;
+  height: 2.35em;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  flex: 0 0 auto;
+}
+.follow-author span { white-space: nowrap; }
+.follow-author:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  text-decoration: none;
+}
+
 .mast {
   display: flex;
   flex-wrap: wrap;
@@ -335,6 +370,9 @@ footer {
   h1 { font-size: 2.15em; }
   dl { grid-template-columns: 1fr; gap: 0.2em; }
   dt { margin-top: 0.65em; }
+  .w, .w-wide { padding-top: 3.4em; }
+  .follow-author span { display: none; }
+  .follow-author { padding: 0.28em; }
 }
 
 @media (prefers-color-scheme: dark) {
