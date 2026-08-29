@@ -6,8 +6,7 @@ Open items only. Host topology and session state live in engram (`startup/next`,
 
 ## Open
 
-- [ ] **Mailroom live proof** (owner + deploy): deploy app ≥ `identities` commits to the prod host; on the mailroom account add one send-as alias in Gmail settings; `identities_list` shows it; `send` with `from_identity` → check received `From` display name + `Reply-To` + alias signature (artifact's "still unproven" item). Closes the first-live-send item below too
-- [ ] Admin: nginx `location = /grokbot` on `pigeon_c52_prod` + Cloudflare purge after `deploy-static.sh` (new page; deploy-static will warn until the location exists)
+- [ ] **Mailroom live proof** (owner): prod app is @ `cca660e` (deployed 2026-08-29); on the mailroom account add one send-as alias in Gmail settings; `identities_list` shows it; `send` with `from_identity` → check received `From` display name + `Reply-To` + alias signature (artifact's "still unproven" item). Closes the first-live-send item below too
 - [ ] Mailroom inbound proof: mail an alias on the catch-all, `messages_list` shows `originalTo` = alias, `deliveredTo` = mailbox
 - [ ] Public gateway: wire `/healthz` (loopback 200; `https://pigeon.c52.com/healthz` still 404 — nginx location)
 - [ ] First live **send** from the production host after OAuth heal (mailboxes active @ `79b6a5c`; send still the acceptance proof)
@@ -25,7 +24,7 @@ Open items only. Host topology and session state live in engram (`startup/next`,
 
 ## Done recently (do not re-open)
 
-- **Mailroom identities (2026-08-29, local commits):** `identities_list` tool; `from_identity` on send/reply/forward/draft_create (handler-validated, From display name, Reply-To, alias signature); `originalTo`/`deliveredTo`/`replyTo`/`authResults` on reads; `format=metadata`; `messages_list`; dropped `gmail.settings.basic` (modify covers sendAs); `docs/mailroom.md`; README/spec/marketing updated; `grokbot.html` + nav link on all pages
+- **Mailroom identities (2026-08-29, deployed `cca660e`):** `identities_list` tool; `from_identity` on send/reply/forward/draft_create (handler-validated, From display name, Reply-To, alias signature); `originalTo`/`deliveredTo`/`replyTo`/`authResults` on reads; `format=metadata`; `messages_list`; dropped `gmail.settings.basic` (modify covers sendAs); `docs/mailroom.md`; README/spec/marketing updated; `grokbot.html` + nav link on all pages; Overview GrokBot CTA; nginx `location = /grokbot` added on `pigeon_c52_prod` (backup `/etc/nginx/backups/pigeon_c52_prod.bak.20260829181658`)
 - **`gmcp.c52.com` hostname retire (2026-08-29):** nginx retire vhost — pages 301→`pigeon.c52.com`; MCP/write/OAuth API → 410; admin retargeted SiteWatch to pigeon + bible recaptured (ok 4/4)
 - **Marketing press refresh:** landing-refresh kit → live `e3e5948` / `?v=fix5` — mast layout, hero unsquashed, Hand scrubbed, your-server H1/aside balance; owner + GrokBot accepted
 - **Follow-author chip:** cooksbayouboy on all marketing pages (`d2ce2f5` chain)
