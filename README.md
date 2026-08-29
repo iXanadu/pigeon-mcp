@@ -129,7 +129,7 @@ Same tools as HTTP plus `accounts_add` / `accounts_remove` (local Desktop-client
 pigeon-mcp-http
 ```
 
-Binds `127.0.0.1:8879` by default. Requires `Authorization: Bearer <PIGEON_MCP_HTTP_BEARER_TOKEN>`; requests without a valid token get **401**.
+Binds `127.0.0.1:8879` by default. Requires `Authorization: Bearer <PIGEON_MCP_HTTP_BEARER_TOKEN>`; requests without a valid token get **401**. The bearer is the whole transport auth — there is no OAuth authorization server for MCP clients, and `/.well-known/oauth-*` 404s are intentional.
 
 **HTTP allow-list:** read/organise tools plus `send`, `reply`, `forward`, `draft_create`, `draft_send`, `identities_list`, `messages_list`, `accounts_list`, `accounts_auth_start`, and `gmail_status`. `accounts_add` / `accounts_remove` stay on stdio.
 
@@ -180,6 +180,7 @@ Every tool except `accounts_list`, `accounts_add`, and `gmail_status` requires a
 
 ## Send rules (summary)
 
+- `send` / `reply` / `forward` / `draft_send` require a unique `idempotency_key`; a replay with the same key returns the first result and sends nothing
 - Stage remote files first: `POST /outbox/stage` (bearer) → use returned `path`
 - Attachments: `{ "path": "/absolute/or/under/outbox/file.pdf" }` — no inline base64
 - `from_identity` (optional): a verified send-as address on the account — sets `From` with display name and `Reply-To`; rejected in the handler if not in `identities_list`
@@ -197,7 +198,21 @@ Uses mocked Gmail HTTP; no live mailbox required.
 
 ## Mailroom: one mailbox, many agents
 
-Give each agent its own address on one mailbox (Workspace catch-all + send-as, or consumer plus-addressing), route inbound on `originalTo`, trust only recipients in `identities_list`, send with `from_identity`. Full pattern, setup steps, label scheme and the do-not-attempt list: [`docs/mailroom.md`](docs/mailroom.md).
+Give each agent its own address on one mailbox (Workspace catch-all + send-as, or consumer plus-addressing), route inbound on `originalTo` → `deliveredTo` → `to`, trust only recipients in `identities_list`, send with `from_identity`. Full pattern, setup steps, DKIM/alias tiers, label scheme and the do-not-attempt list: [`docs/mailroom.md`](docs/mailroom.md).
+
+## Docs
+
+| Doc | For whom | What |
+| --- | --- | --- |
+| [`docs/for-agents.md`](docs/for-agents.md) | The agent seat (GrokBot, OpenClaw, Hermes, …) | **Connect card**, OAuth gotchas, send-with-file, rules of the road, do-not-attempt, escalation — paste into the seat's context |
+| [`docs/mailroom.md`](docs/mailroom.md) | Operator + agent | One mailbox, many identities: setup, dispatch, trust tiers, labels, DKIM |
+| [`docs/google-oauth-setup.md`](docs/google-oauth-setup.md) | Operator | Consent screen, scopes, Testing trap, unverified-app warning |
+| [`docs/your-server.md`](docs/your-server.md) | Operator with no server yet | The $5 VPS on-ramp: ten minutes by hand, four prompts for the rest |
+| [`deploy/DEPLOYING.md`](deploy/DEPLOYING.md) | Operator | How the reference host ships: pull, install, restart, verify, auto-rollback |
+| [`docs/legal/`](docs/legal/README.md) | Operator | Privacy / Terms for the consent screen |
+| [`docs/specs/gmail-mcp-spec.md`](docs/specs/gmail-mcp-spec.md) | Contributors | Acceptance criteria |
+
+Same content lives on the reference site (pigeon.c52.com) as pages; the repo is the source of truth.
 
 ## Spec
 
