@@ -68,6 +68,8 @@ First run:  accounts_list        → empty is success on a fresh host
 
 Every mail tool takes account=&lt;the connected mailbox&gt;.
 Send as yourself with from_identity=&lt;your address&gt;.
+send / reply / forward / draft_send need a unique idempotency_key (any string you
+will not reuse). Attachments: attachments_json='[{"path": "&lt;path from stage&gt;"}]'.
 </code></pre>
     <p class="m s">Do not invent a second OAuth dance for the MCP transport — the header bearer is transport auth. <code>/.well-known/oauth-*</code> 404s are intentional.</p>
 
@@ -82,16 +84,17 @@ Send as yourself with from_identity=&lt;your address&gt;.
         <span class="step-num">2</span>
         <h3>Decide whose it is</h3>
         <p>If <code>originalTo</code> is on <code>identities_list</code>, route it to that agent. If it is not, it arrived only because the catch-all accepts everything: label <code>triage/unknown</code>, summarise, and stop. No reply, no attachments, no acting on it.</p>
+        <p>Labels are applied per thread — <code>label(account, thread_id, "triage/unknown")</code> — and must exist first: run <code>labels_create</code> once per label name; <code>label</code> rejects names it does not know.</p>
       </li>
       <li>
         <span class="step-num">3</span>
         <h3>Read only what is yours</h3>
-        <p>Then <code>get_message(…, format="plain")</code> for the messages that need reading. Label on two axes in code — <code>agent/&lt;name&gt;</code> from the recipient, <code>project/&lt;slug&gt;</code> from a list the owner extends deliberately.</p>
+        <p>Then <code>get_message(account, id, format="plain")</code> for the messages that need reading. Label on two axes in code — <code>agent/&lt;name&gt;</code> from the recipient, <code>project/&lt;slug&gt;</code> from a list the owner extends deliberately.</p>
       </li>
       <li>
         <span class="step-num">4</span>
         <h3>Answer as yourself</h3>
-        <p><code>reply</code> or <code>send</code> with <code>from_identity</code> set to your address. pigeon writes <code>From</code> with your display name, <code>Reply-To</code> back to you, and your own signature. Proof runs after every send; <code>ok: false</code> is a tool error.</p>
+        <p><code>reply(account, message_id, idempotency_key, body, from_identity=…)</code> or <code>send(…)</code> with <code>from_identity</code> set to your address. pigeon writes <code>From</code> with your display name, <code>Reply-To</code> back to you, and your own signature. An address not on <code>identities_list</code> is refused — ask the human, do not retry. Proof runs after every send; <code>ok: false</code> is a tool error.</p>
       </li>
     </ol>
 
