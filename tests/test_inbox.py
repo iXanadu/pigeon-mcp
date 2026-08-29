@@ -82,6 +82,23 @@ async def test_get_attachment_writes_file(inbox_env):
     assert out.read_bytes() == data
 
 
+def test_relative_output_path_lands_under_download_root(inbox_env):
+    from pigeon_mcp.attachments import resolve_download_path
+
+    p = resolve_download_path(inbox_env["downloads"], "deed.pdf")
+    assert p == (inbox_env["downloads"] / "deed.pdf").resolve()
+    p2 = resolve_download_path(inbox_env["downloads"], "sub/dir/x.bin")
+    assert p2 == (inbox_env["downloads"] / "sub/dir/x.bin").resolve()
+    assert p2.parent.is_dir()
+
+
+def test_relative_dotdot_still_rejected(inbox_env):
+    from pigeon_mcp.attachments import resolve_download_path
+
+    with pytest.raises(ValueError, match="under download root"):
+        resolve_download_path(inbox_env["downloads"], "../escape.bin")
+
+
 def test_get_attachment_rejects_outside_download_root(inbox_env):
     from pigeon_mcp.attachments import resolve_download_path
 

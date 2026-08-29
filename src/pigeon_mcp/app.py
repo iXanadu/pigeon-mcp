@@ -364,7 +364,8 @@ def build_mcp(*, http: bool = False) -> MCPServer:
         attachment_id: str,
         output_path: str,
     ) -> str:
-        """Write an attachment under download_root. Returns path and byte size."""
+        """Write an attachment under download_root. output_path may be a bare filename
+        (lands in download_root) or an absolute path under it. Returns path and size."""
         return inbox_mod.format_result(
             await inbox_mod.get_attachment_file(account, message_id, attachment_id, output_path)
         )

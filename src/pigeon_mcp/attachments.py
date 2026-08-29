@@ -80,9 +80,17 @@ def stage_outbox_bytes(
 
 
 def resolve_download_path(download_root: Path, output_path: str) -> Path:
-    """Resolve output_path; must stay under download_root after symlink resolution."""
+    """Resolve output_path; must stay under download_root after symlink resolution.
+
+    A relative output_path (the common case: just a filename) is anchored under
+    download_root, never the process CWD — a bare "deed.pdf" must work from any
+    working directory the service happens to run in.
+    """
     root = download_root.expanduser().resolve()
-    path = Path(output_path).expanduser().resolve()
+    raw = Path(output_path).expanduser()
+    if not raw.is_absolute():
+        raw = root / raw
+    path = raw.resolve()
     try:
         path.relative_to(root)
     except ValueError as exc:
