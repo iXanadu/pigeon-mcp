@@ -8,7 +8,8 @@ Open items only. Host topology and session state live in engram (`startup/next`,
 
 - [ ] Public gateway: wire `/healthz` (loopback 200; `https://pigeon.c52.com/healthz` still 404 — nginx location)
 - [ ] First live **send** from the production host after OAuth heal (mailboxes active @ `79b6a5c`; send still the acceptance proof)
-- [ ] Retire legacy `gmcp.c52.com` hostname (still proxied toward the old workstation path historically — confirm and remove)
+- [ ] Optional later: drop `gmcp.c52.com` DNS + LE cert + empty `/var/www/gmcp-static` once redirect window is enough (nginx retire vhost live 2026-08-29: pages 301→pigeon, API 410)
+- [ ] Owner: remove any leftover `https://gmcp.c52.com/oauth/callback` from Google Cloud Web client redirect URIs (app already uses pigeon only)
 - [ ] Optional smoke: inbound `get_attachment`; large zip under Gmail’s ~25MB cap
 - [ ] Dead-simple README pass for first-time agent seats (Web-first OAuth; Desktop as footnote only — see memory `decision/oauth-docs-web-first`)
 - [ ] Admin: drop unit `ExecStartPost` chmod workaround now that app `#5` (no chmod `tokens_dir`) is in prod since `c48c121`
@@ -21,6 +22,7 @@ Open items only. Host topology and session state live in engram (`startup/next`,
 
 ## Done recently (do not re-open)
 
+- **`gmcp.c52.com` hostname retire (2026-08-29):** nginx retire vhost — pages 301→`pigeon.c52.com`; MCP/write/OAuth API → 410; admin retargeted SiteWatch to pigeon + bible recaptured (ok 4/4)
 - **Marketing press refresh:** landing-refresh kit → live `e3e5948` / `?v=fix5` — mast layout, hero unsquashed, Hand scrubbed, your-server H1/aside balance; owner + GrokBot accepted
 - **Follow-author chip:** cooksbayouboy on all marketing pages (`d2ce2f5` chain)
 - **OAuth mass `needs_auth`:** refresh used empty Desktop client on Web-only prod — fixed `79b6a5c`, deployed prod-host, three mailboxes healed without re-consent
