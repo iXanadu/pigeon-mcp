@@ -11,7 +11,7 @@ Public pages for `pigeon.c52.com`. **Visual identity:** tiding press, different 
 | `grokbot.html` | GrokBot + owner page: connect card, mailroom pattern, identity rules |
 | `privacy.html` / `terms.html` | Consent-screen HTML (source also in `docs/legal/`) |
 | `site.css` | Shared styles |
-| `assets/` | Engraved JPG/PNG kit (`01`–`09`; `07` off-site only; `09` pending owner approval) |
+| `assets/` | Engraved JPG/PNG kit (`01`–`09`; `07` off-site only; `09` pending owner approval); `10-grokbot-logo.jpg` = web-sized copy of the owner-supplied GrokBot logo (source PNG lives outside git) for the Overview CTA |
 | `favicon.png` | Cropped from `assets/02-mark-bold.jpg` |
 | `favicon.svg` | Fallback tab icon |
 | `author-avatar.png` | Circular “Follow the author” chip (X) |
