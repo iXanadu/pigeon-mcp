@@ -177,6 +177,12 @@ async def send_draft(access_token: str, draft_id: str) -> dict:
     return result
 
 
+async def list_send_as(access_token: str) -> dict:
+    result = await _request("GET", f"{GMAIL_API}/users/me/settings/sendAs", access_token)
+    assert isinstance(result, dict)
+    return result
+
+
 async def get_send_as(access_token: str, email: str) -> dict:
     return await _request(
         "GET",

@@ -21,7 +21,8 @@ from pigeon_mcp.gmail_client import (
     create_label,
     parse_message_headers,
 )
-from pigeon_mcp.mail import _idempotency_store, _live_signature, _strip_html
+from pigeon_mcp.identities import resolve_sender
+from pigeon_mcp.mail import _idempotency_store, _strip_html
 from pigeon_mcp.mime_builder import build_mime
 from pigeon_mcp.mime_parse import extract_html_body, extract_plain_body, list_attachment_parts
 from pigeon_mcp.proof import verify_send_proof
@@ -190,15 +191,19 @@ async def draft_create(
     footer: str = "",
     cc: str = "",
     thread_id: str = "",
+    from_identity: str = "",
 ) -> dict[str, Any]:
     resolved = resolve_attachments(settings.outbox_root, attachments)
     token = await access_token_for(account)
-    sig_html, sig_plain = await _live_signature(token, account)
-    plain_sig = _strip_html(sig_plain or sig_html)
+    sender = await resolve_sender(token, account, from_identity)
+    sig_html = sender.signature_html
+    plain_sig = _strip_html(sig_html)
     to_list = [a.strip() for a in to.split(",") if a.strip()]
     cc_list = [a.strip() for a in cc.split(",") if a.strip()] if cc else None
     mime_bytes = build_mime(
-        from_email=account,
+        from_email=sender.email,
+        from_name=sender.display_name,
+        reply_to=sender.reply_to,
         to=to_list,
         subject=subject,
         body=body,

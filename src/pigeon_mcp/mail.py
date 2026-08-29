@@ -9,14 +9,13 @@ from typing import Any
 from pigeon_mcp.attachments import resolve_attachments
 from pigeon_mcp.config import settings
 from pigeon_mcp.gmail_client import (
-    GmailApiError,
     get_message,
-    get_send_as,
     parse_message_headers,
     send_raw_mime,
 )
 from pigeon_mcp.google_oauth import ensure_fresh_token
 from pigeon_mcp.idempotency import IdempotencyStore
+from pigeon_mcp.identities import resolve_sender
 from pigeon_mcp.mime_builder import build_mime
 from pigeon_mcp.oauth_constants import STATUS_NEEDS_AUTH
 from pigeon_mcp.proof import verify_send_proof
@@ -43,14 +42,6 @@ async def _access_token_for(account: str) -> str:
     if not token.access_token:
         raise ValueError(f"No access token for {account}")
     return token.access_token
-
-
-async def _live_signature(access_token: str, account: str) -> tuple[str, str]:
-    try:
-        send_as = await get_send_as(access_token, account)
-    except GmailApiError:
-        return "", ""
-    return send_as.get("signature", "") or "", ""
 
 
 async def _deliver(
@@ -92,15 +83,19 @@ async def send(
     attachments: list[dict] | None = None,
     footer: str = "",
     cc: str = "",
+    from_identity: str = "",
 ) -> dict[str, Any]:
     resolved = resolve_attachments(settings.outbox_root, attachments)
     access_token = await _access_token_for(account)
-    sig_html, sig_plain = await _live_signature(access_token, account)
-    plain_sig = _strip_html(sig_plain or sig_html)
+    sender = await resolve_sender(access_token, account, from_identity)
+    sig_html = sender.signature_html
+    plain_sig = _strip_html(sig_html)
     to_list = [a.strip() for a in to.split(",") if a.strip()]
     cc_list = [a.strip() for a in cc.split(",") if a.strip()] if cc else None
     mime_bytes = build_mime(
-        from_email=account,
+        from_email=sender.email,
+        from_name=sender.display_name,
+        reply_to=sender.reply_to,
         to=to_list,
         subject=subject,
         body=body,
@@ -130,6 +125,7 @@ async def reply(
     attachments: list[dict] | None = None,
     footer: str = "",
     subject: str = "",
+    from_identity: str = "",
 ) -> dict[str, Any]:
     resolved = resolve_attachments(settings.outbox_root, attachments)
     access_token = await _access_token_for(account)
@@ -144,12 +140,15 @@ async def reply(
     if subj and not subj.lower().startswith("re:"):
         subj = f"Re: {subj}"
 
-    sig_html, sig_plain = await _live_signature(access_token, account)
-    plain_sig = _strip_html(sig_plain or sig_html)
+    sender = await resolve_sender(access_token, account, from_identity)
+    sig_html = sender.signature_html
+    plain_sig = _strip_html(sig_html)
     to_raw = headers.get("reply-to") or headers.get("from", "")
     to_list = _parse_addresses(to_raw)
     mime_bytes = build_mime(
-        from_email=account,
+        from_email=sender.email,
+        from_name=sender.display_name,
+        reply_to=sender.reply_to,
         to=to_list,
         subject=subj,
         body=body,
@@ -181,6 +180,7 @@ async def forward(
     attachments: list[dict] | None = None,
     footer: str = "",
     subject: str = "",
+    from_identity: str = "",
 ) -> dict[str, Any]:
     resolved = resolve_attachments(settings.outbox_root, attachments)
     access_token = await _access_token_for(account)
@@ -196,11 +196,14 @@ async def forward(
     if subj and not subj.lower().startswith("fwd:"):
         subj = f"Fwd: {subj}"
 
-    sig_html, sig_plain = await _live_signature(access_token, account)
-    plain_sig = _strip_html(sig_plain or sig_html)
+    sender = await resolve_sender(access_token, account, from_identity)
+    sig_html = sender.signature_html
+    plain_sig = _strip_html(sig_html)
     to_list = [a.strip() for a in to.split(",") if a.strip()]
     mime_bytes = build_mime(
-        from_email=account,
+        from_email=sender.email,
+        from_name=sender.display_name,
+        reply_to=sender.reply_to,
         to=to_list,
         subject=subj,
         body=body,

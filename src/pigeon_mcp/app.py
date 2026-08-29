@@ -11,6 +11,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, PlainTextResponse, Response
 
 from pigeon_mcp import accounts as accounts_mod
+from pigeon_mcp import identities as identities_mod
 from pigeon_mcp import inbox as inbox_mod
 from pigeon_mcp import mail as mail_mod
 from pigeon_mcp.attachments import MAX_TOTAL_BYTES, stage_outbox_bytes
@@ -25,6 +26,7 @@ HTTP_TOOL_NAMES = frozenset(
         "gmail_status",
         "accounts_list",
         "accounts_auth_start",
+        "identities_list",
         "search",
         "get_thread",
         "get_message",
@@ -204,6 +206,11 @@ def build_mcp(*, http: bool = False) -> MCPServer:
         result = await accounts_mod.accounts_auth_start()
         return json.dumps(result, indent=2)
 
+    @mcp.tool()
+    async def identities_list(account: str) -> str:
+        """Verified send-as identities for an account. Only these may be used as from_identity."""
+        return json.dumps(await identities_mod.list_identities(account), indent=2)
+
     if not http:
 
         @mcp.tool()
@@ -229,8 +236,13 @@ def build_mcp(*, http: bool = False) -> MCPServer:
         attachments_json: str = "[]",
         footer: str = "",
         cc: str = "",
+        from_identity: str = "",
     ) -> str:
-        """Send new mail. Attachments are outbox file paths only. Returns proof payload."""
+        """Send new mail. Attachments are outbox file paths only. Returns proof payload.
+
+        from_identity: optional verified send-as address (see identities_list). Sets From
+        with its display name and Reply-To. Empty = the account address itself.
+        """
         result = await mail_mod.send(
             account=account,
             to=to,
@@ -241,6 +253,7 @@ def build_mcp(*, http: bool = False) -> MCPServer:
             attachments=_parse_attachments(attachments_json),
             footer=footer,
             cc=cc,
+            from_identity=from_identity,
         )
         return mail_mod.format_result(result)
 
@@ -254,6 +267,7 @@ def build_mcp(*, http: bool = False) -> MCPServer:
         attachments_json: str = "[]",
         footer: str = "",
         subject: str = "",
+        from_identity: str = "",
     ) -> str:
         """Reply on a thread. Same attachment and proof rules as send."""
         result = await mail_mod.reply(
@@ -265,6 +279,7 @@ def build_mcp(*, http: bool = False) -> MCPServer:
             attachments=_parse_attachments(attachments_json),
             footer=footer,
             subject=subject,
+            from_identity=from_identity,
         )
         return mail_mod.format_result(result)
 
@@ -279,6 +294,7 @@ def build_mcp(*, http: bool = False) -> MCPServer:
         attachments_json: str = "[]",
         footer: str = "",
         subject: str = "",
+        from_identity: str = "",
     ) -> str:
         """Forward a message on-thread. Same attachment and proof rules as send."""
         result = await mail_mod.forward(
@@ -291,6 +307,7 @@ def build_mcp(*, http: bool = False) -> MCPServer:
             attachments=_parse_attachments(attachments_json),
             footer=footer,
             subject=subject,
+            from_identity=from_identity,
         )
         return mail_mod.format_result(result)
 
@@ -378,8 +395,9 @@ def build_mcp(*, http: bool = False) -> MCPServer:
         footer: str = "",
         cc: str = "",
         thread_id: str = "",
+        from_identity: str = "",
     ) -> str:
-        """Create a draft with the same MIME rules as send."""
+        """Create a draft with the same MIME rules as send (from_identity as in send)."""
         return inbox_mod.format_result(
             await inbox_mod.draft_create(
                 account=account,
@@ -391,6 +409,7 @@ def build_mcp(*, http: bool = False) -> MCPServer:
                 footer=footer,
                 cc=cc,
                 thread_id=thread_id,
+                from_identity=from_identity,
             )
         )
 

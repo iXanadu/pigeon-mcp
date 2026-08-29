@@ -59,6 +59,8 @@ def build_mime(
     in_reply_to: str | None = None,
     references: str | None = None,
     cc: list[str] | None = None,
+    from_name: str = "",
+    reply_to: str | None = None,
 ) -> bytes:
     attachments = attachments or []
     has_attachments = bool(attachments)
@@ -88,7 +90,9 @@ def build_mime(
     else:
         root = MIMEText("", "plain", "utf-8")
 
-    root["From"] = formataddr(("", from_email))
+    root["From"] = formataddr((from_name or "", from_email))
+    if reply_to:
+        root["Reply-To"] = reply_to
     root["To"] = ", ".join(to)
     if cc:
         root["Cc"] = ", ".join(cc)
