@@ -1,11 +1,14 @@
 # pigeon-mcp backlog
 
-Last updated: 2026-08-28 (stable wrap)
+Last updated: 2026-08-29 (mailroom identities)
 
 Open items only. Host topology and session state live in engram (`startup/next`, `deploy/*`).
 
 ## Open
 
+- [ ] **Mailroom live proof** (owner + deploy): deploy app ≥ `identities` commits to the prod host; on the mailroom account add one send-as alias in Gmail settings; `identities_list` shows it; `send` with `from_identity` → check received `From` display name + `Reply-To` + alias signature (artifact's "still unproven" item). Closes the first-live-send item below too
+- [ ] Admin: nginx `location = /grokbot` on `pigeon_c52_prod` + Cloudflare purge after `deploy-static.sh` (new page; deploy-static will warn until the location exists)
+- [ ] Mailroom inbound proof: mail an alias on the catch-all, `messages_list` shows `originalTo` = alias, `deliveredTo` = mailbox
 - [ ] Public gateway: wire `/healthz` (loopback 200; `https://pigeon.c52.com/healthz` still 404 — nginx location)
 - [ ] First live **send** from the production host after OAuth heal (mailboxes active @ `79b6a5c`; send still the acceptance proof)
 - [ ] Optional later: drop `gmcp.c52.com` DNS + LE cert + empty `/var/www/gmcp-static` once redirect window is enough (nginx retire vhost live 2026-08-29: pages 301→pigeon, API 410)
@@ -22,12 +25,13 @@ Open items only. Host topology and session state live in engram (`startup/next`,
 
 ## Done recently (do not re-open)
 
+- **Mailroom identities (2026-08-29, local commits):** `identities_list` tool; `from_identity` on send/reply/forward/draft_create (handler-validated, From display name, Reply-To, alias signature); `originalTo`/`deliveredTo`/`replyTo`/`authResults` on reads; `format=metadata`; `messages_list`; dropped `gmail.settings.basic` (modify covers sendAs); `docs/mailroom.md`; README/spec/marketing updated; `grokbot.html` + nav link on all pages
 - **`gmcp.c52.com` hostname retire (2026-08-29):** nginx retire vhost — pages 301→`pigeon.c52.com`; MCP/write/OAuth API → 410; admin retargeted SiteWatch to pigeon + bible recaptured (ok 4/4)
 - **Marketing press refresh:** landing-refresh kit → live `e3e5948` / `?v=fix5` — mast layout, hero unsquashed, Hand scrubbed, your-server H1/aside balance; owner + GrokBot accepted
 - **Follow-author chip:** cooksbayouboy on all marketing pages (`d2ce2f5` chain)
-- **OAuth mass `needs_auth`:** refresh used empty Desktop client on Web-only prod — fixed `79b6a5c`, deployed prod-host, three mailboxes healed without re-consent
+- **OAuth mass `needs_auth`:** refresh used empty Desktop client on Web-only prod — fixed `79b6a5c`, deployed to prod, three mailboxes healed without re-consent
 - Product rename → `pigeon-mcp` / `pigeon.c52.com`; package `PIGEON_MCP_*`
-- Deploy playbook in-repo (`deploy/`); prod-host app @ `79b6a5c`, static @ `e3e5948`
+- Deploy playbook in-repo (`deploy/`); prod app @ `79b6a5c`, static @ `e3e5948`
 - Marketing GrokBot testimony aside + `your-server` VPS on-ramp (pre-refresh)
 - App deploy reqs: `/healthz`, env-only boot, expanduser `#4`, no tokens_dir chmod `#5`
 - Mini HTTP stopped on purpose after prod cutover

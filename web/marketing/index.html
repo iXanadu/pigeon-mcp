@@ -22,6 +22,7 @@
           <a href="how-it-works.html">How it works</a>
           <a href="for-agents.html">For agents</a>
           <a href="your-server.html">Your own server</a>
+          <a href="grokbot.html">GrokBot</a>
           <a href="https://github.com/iXanadu/pigeon-mcp">GitHub ↗</a>
         </nav>
         <a class="follow-author" href="https://x.com/cooksbayouboy" target="_blank" rel="noopener noreferrer">
@@ -70,13 +71,16 @@
 
     <h2>What it does</h2>
     <p>Connect one or more Gmail accounts. Your agent searches threads, reads messages, labels and archives, drafts and sends real MIME — including file attachments staged onto the server — with a live Gmail signature appended at send time.</p>
+    <p>One mailbox can carry <strong>many agents</strong>. Each gets its own address as a verified Gmail send-as identity; pigeon routes inbound on the address the sender actually used and lets an agent send as itself — <code>From</code>, <code>Reply-To</code>, its own signature — validated in the tool, not in a prompt.</p>
     <p class="m s">Shipped surface is <strong>Gmail only</strong>. Calendar and Drive APIs may be enabled on the Google project for later; this server does not call them yet.</p>
 
     <dl>
       <dt>accounts_*</dt>
       <dd>List connected mailboxes; start Google consent from the agent seat; revoke.</dd>
-      <dt>search / get_*</dt>
-      <dd>Find threads and messages without dumping megabytes of base64 into the model.</dd>
+      <dt>search / messages_list / get_*</dt>
+      <dd>Find threads and messages without dumping megabytes of base64 into the model. Headers-only sweeps carry <code>originalTo</code> — the real recipient behind a catch-all.</dd>
+      <dt>identities_list / from_identity</dt>
+      <dd>Gmail’s send-as list is the registry. An agent may send only as an address on it; anything else is rejected before a byte is built.</dd>
       <dt>send / reply / forward</dt>
       <dd>Server-built RFC822. Attachments are paths under an outbox root — never inline content from the chat.</dd>
       <dt>outbox/stage</dt>

@@ -22,6 +22,7 @@
           <a href="how-it-works.html" aria-current="page">How it works</a>
           <a href="for-agents.html">For agents</a>
           <a href="your-server.html">Your own server</a>
+          <a href="grokbot.html">GrokBot</a>
           <a href="https://github.com/iXanadu/pigeon-mcp">GitHub ↗</a>
         </nav>
         <a class="follow-author" href="https://x.com/cooksbayouboy" target="_blank" rel="noopener noreferrer">
@@ -52,7 +53,7 @@
       <li>
         <span class="step-num">3</span>
         <h3>Day-to-day mail over MCP</h3>
-        <p>Search, read, label, draft, send. HTTP requires <code>Authorization: Bearer …</code>. Account address is an argument on every mail tool.</p>
+        <p>Search, read, label, draft, send. HTTP requires <code>Authorization: Bearer …</code>. Account address is an argument on every mail tool; <code>from_identity</code> picks which verified send-as address the mail goes out as.</p>
       </li>
       <li>
         <span class="step-num">4</span>
@@ -86,6 +87,10 @@
         </tr>
       </tbody>
     </table>
+
+    <h2>One mailbox, many agents</h2>
+    <p>You do not need a Google account per agent. Put a catch-all on your domain (or use plus-addressing on a consumer Gmail), add each agent’s address under <em>Send mail as</em>, and connect the one mailbox. <code>identities_list</code> reads that send-as list — it is the registry, nothing else is kept. Inbound mail carries <code>originalTo</code>, the address the sender used; the agent dispatches on it and trusts only recipients that are real identities. Outbound, <code>from_identity</code> sets <code>From</code>, <code>Reply-To</code> and the alias’s own signature, and the handler refuses any address not on the list.</p>
+    <p class="m s">Setup steps for Workspace and consumer Gmail, the label scheme, and the list of things an agent cannot do by design: <a href="https://github.com/iXanadu/pigeon-mcp/blob/main/docs/mailroom.md">docs/mailroom.md</a>.</p>
 
     <h2>Where files live</h2>
     <p>Outbox and download roots are configurable. On a personal host, <code>/tmp/…</code> with <code>0700</code> self-heal on start is fine for transient staging. Tokens stay next to the service (or under a swept prod tree) — never in the agent transcript.</p>

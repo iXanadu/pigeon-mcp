@@ -8,6 +8,7 @@ Public pages for `pigeon.c52.com`. **Visual identity:** tiding press, different 
 | `how-it-works.html` | OAuth → MCP → stage → send |
 | `for-agents.html` | Agent seat instructions |
 | `your-server.html` | $5 VPS on-ramp (timeline, Linode shot, undo grid) |
+| `grokbot.html` | GrokBot + owner page: connect card, mailroom pattern, identity rules |
 | `privacy.html` / `terms.html` | Consent-screen HTML (source also in `docs/legal/`) |
 | `site.css` | Shared styles |
 | `assets/` | Engraved JPG/PNG kit (`01`–`09`; `07` off-site only; `09` pending owner approval) |
@@ -25,6 +26,7 @@ Serve this directory at the public host document root for `/`, and map:
 - `/how-it-works` → `how-it-works.html` (or keep `.html`)
 - `/for-agents` → `for-agents.html`
 - `/your-server` → `your-server.html`
+- `/grokbot` → `grokbot.html`
 - `/privacy` → `privacy.html`
 - `/terms` → `terms.html`
 

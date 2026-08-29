@@ -25,6 +25,16 @@ Scopes, all of them, on every account:
 
 That is enough to search, read, label, trash, archive, draft, send, and reply — and `gmail.modify` also reads the send-as list, which is where live signatures and verified identities come from. Do not ask for `gmail.settings.basic` (redundant), the full-mail god scope, or any settings-sharing / admin scope. Do not cache the signature text.
 
+## Identities and routing (mailroom)
+
+One token can serve many agents. Gmail's send-as list is the registry — never a hand-kept roster.
+
+- `identities_list(account)` returns send-as entries with `verificationStatus` accepted (the primary carries none and counts as accepted). Pending entries are filtered out.
+- `send`, `reply`, `forward`, `draft_create` take optional `from_identity`. It must match an entry from that list, case-insensitively, **checked in the handler before any MIME is built**; otherwise the call fails naming the allowed set and nothing is uploaded. The chosen entry supplies `From` display name, `Reply-To` (its `replyToAddress` or itself) and its own live signature. Empty `from_identity` = bare account address, no `Reply-To`.
+- Every message returned by `get_message`, `get_thread`, `messages_list` carries `originalTo` (`X-Gm-Original-To`), `deliveredTo`, `replyTo`, `messageId`, `authResults`. `format=metadata` asks Gmail for headers only (no body fetch).
+- `messages_list(account, query)` lists messages (not threads) with those headers and a snippet.
+- Never request `gmail.settings.sharing`, Admin SDK scopes, or attempt `sendAs.create`/`verify`.
+
 ## What failed, exactly
 
 Cursor's hosted Gmail MCP is connected and has send. Send is still broken.

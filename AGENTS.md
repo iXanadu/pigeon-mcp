@@ -3,7 +3,7 @@
 ## Project Overview
 Gmail connector for MCP: one tool module, two transports (stdio for local harnesses, Streamable HTTP behind a gateway for remote clients). OAuth refresh-token auth, N Gmail identities, server-built MIME, file-path attachments, live signatures.
 
-**READ FIRST:** `docs/specs/pigeon-mcp-spec.md` (acceptance criteria), then `README.md` (operator setup).
+**READ FIRST:** `docs/specs/gmail-mcp-spec.md` (acceptance criteria), then `README.md` (operator setup), then `docs/mailroom.md` (one mailbox, many identities — routing and trust rules).
 
 ## Project Structure
 ```
@@ -45,12 +45,13 @@ pigeon-doctor
 ## Sources of Truth
 - `deploy/DEPLOYING.md` — how to ship (app + static); app requirements for deployability
 - `BACKLOG.md` — open items only (if it is not there, it is not tracked)
-- `docs/specs/pigeon-mcp-spec.md` — acceptance criteria
+- `docs/specs/gmail-mcp-spec.md` — acceptance criteria
 - engram `scope=project` — session/deploy state (not git)
 
 ## Reference Docs
 - `README.md` — install, quick OAuth checklist
 - `docs/google-oauth-setup.md` — scopes, consent screen, Testing trap, legal URLs
+- `docs/mailroom.md` — send-as identities, `originalTo` dispatch, trust tiers, labels, blocked ops
 - `docs/legal/` — Privacy + Terms (repo copies; live on pigeon.c52.com)
-- `docs/specs/pigeon-mcp-spec.md` — acceptance criteria
+- `docs/specs/gmail-mcp-spec.md` — acceptance criteria
 - `scripts/repo-hygiene-check.sh` — assume-public gate (local `.hygiene-denylist`, never commit)

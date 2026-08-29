@@ -9,6 +9,8 @@ Gmail connector for MCP clients. One server, many Gmail accounts via OAuth refre
 ## Features
 
 - **Multi-account OAuth** — add mailboxes with `accounts_add`; tokens stored as `gmail-token-*.json` (mode 0640)
+- **Many identities on one mailbox** — `identities_list` reads Gmail's verified send-as list; `from_identity` on send/reply/forward/draft sets `From`, `Reply-To` and the alias's own signature, validated in the handler. See [`docs/mailroom.md`](docs/mailroom.md)
+- **Routing headers** — every read exposes `originalTo` (`X-Gm-Original-To`), `deliveredTo`, `replyTo`, `authResults`; `messages_list` sweeps headers without bodies
 - **Send / reply / forward** — server-built MIME, outbox file paths only, 25 MB cap, idempotency keys, proof on success
 - **Read / organise** — search (threads + pagination), get thread/message, labels, archive/trash, drafts
 - **Attachments** — send from configured outbox root (default `~/Outbox`); stage via `POST /outbox/stage` (bearer); download to configured download root (default `~/Inbox`)
@@ -171,7 +173,7 @@ pigeon-mcp-http
 
 Binds `127.0.0.1:8879` by default. Requires `Authorization: Bearer <PIGEON_MCP_HTTP_BEARER_TOKEN>`; requests without a valid token get **401**.
 
-**Hand allow-list** (HTTP only): read/organise tools plus `send`, `reply`, `forward`, `draft_create`, `draft_send`, `accounts_list`, `accounts_auth_start`, and `gmail_status`. Account management (`accounts_add` / `accounts_remove`) stays on stdio.
+**Hand allow-list** (HTTP only): read/organise tools plus `send`, `reply`, `forward`, `draft_create`, `draft_send`, `identities_list`, `messages_list`, `accounts_list`, `accounts_auth_start`, and `gmail_status`. Account management (`accounts_add` / `accounts_remove`) stays on stdio.
 
 **Stage attachments for Hand** (no scp required):
 
@@ -204,11 +206,13 @@ On Linux, run `pigeon-mcp-http` under systemd with the same loopback bind — se
 | `accounts_list` | Connected addresses and token health |
 | `accounts_add` | OAuth consent (**stdio only**) |
 | `accounts_remove` | Revoke and drop token (**stdio only**) |
+| `identities_list` | Verified send-as identities for an account — the only values `from_identity` accepts |
 | `search` | Gmail query; returns threads |
-| `get_thread` / `get_message` | `format=plain` or `full` |
+| `messages_list` | Gmail query; returns messages with headers + snippet, no bodies (routing sweeps) |
+| `get_thread` / `get_message` | `format=metadata` (headers only), `plain` or `full`; every message carries `originalTo`, `deliveredTo`, `replyTo`, `authResults` |
 | `get_attachment` | Writes under download root |
-| `send` / `reply` / `forward` | Paths only; rejects `content` / base64 in JSON |
-| `draft_create` / `draft_send` | Same attach/proof rules as send |
+| `send` / `reply` / `forward` | Paths only; rejects `content` / base64 in JSON; optional `from_identity` |
+| `draft_create` / `draft_send` | Same attach/proof rules as send; `draft_create` takes `from_identity` |
 | `labels_list` / `labels_create` | User + system labels |
 | `label` / `unlabel` | Comma-separated names or ids |
 | `archive` / `trash` / `untrash` | Thread-level |
@@ -219,7 +223,8 @@ Every tool except `accounts_list`, `accounts_add`, and `gmail_status` requires a
 
 - Stage remote files first: `POST /outbox/stage` (bearer) → use returned `path`
 - Attachments: `{ "path": "/absolute/or/under/outbox/file.pdf" }` — no inline base64
-- Live Gmail signature appended at send time (not cached)
+- `from_identity` (optional): a verified send-as address on the account — sets `From` with display name and `Reply-To`; rejected in the handler if not in `identities_list`
+- Live Gmail signature of the sending identity appended at send time (not cached)
 - Optional `footer` after signature
 - Returns proof: sizes, hrefs, `ok` false → tool error (e.g. chopped attachment or `google.com/url` rewrite)
 
@@ -231,9 +236,13 @@ pytest tests/ -v
 
 Uses mocked Gmail HTTP; no live mailbox required.
 
+## Mailroom: one mailbox, many agents
+
+Give each agent its own address on one mailbox (Workspace catch-all + send-as, or consumer plus-addressing), route inbound on `originalTo`, trust only recipients in `identities_list`, send with `from_identity`. Full pattern, setup steps, label scheme and the do-not-attempt list: [`docs/mailroom.md`](docs/mailroom.md).
+
 ## Spec
 
-Product requirements: `docs/specs/pigeon-mcp-spec.md`
+Product requirements: `docs/specs/gmail-mcp-spec.md`
 
 ## License
 
