@@ -37,6 +37,10 @@ sender ──► anything@your-domain ┘        └─ send-as identities: agen
    add each agent address (`engram@your-domain`, `hand@your-domain`, …) with a
    display name. Addresses on your own domain verify instantly; the mailbox
    receives the verification mail because of the catch-all.
+   **For identities that write to people outside your organisation, also
+   provision the address as a real alias** on the user (Admin console → user →
+   *Alternate email addresses*). Send-as alone gives you the identity; only a
+   provisioned alias gets the domain **DKIM** signature — see *Sending* below.
 4. **Forwarding off.** In the OU's Gmail settings, disable automatic forwarding.
    This is the exfiltration guard: a compromised agent cannot build a forward
    rule out of the domain.
@@ -54,20 +58,29 @@ and `X-Gm-Original-To` keeps the plus-address. Add each plus-address under
 *Send mail as* with a display name; Gmail treats your own plus-addresses as
 aliases of the account. Everything below works unchanged.
 
-## Routing inbound: `originalTo`, not `deliveredTo`
+## Routing inbound: three paths, one rule
 
-Behind a catch-all every message carries `Delivered-To: mail@your-domain`,
-whatever the sender wrote. Filtering on it puts everything in one bucket.
-The address the sender actually used survives in `X-Gm-Original-To`, which
-pigeon surfaces as `originalTo` on every read tool.
+Which header names the real recipient depends on how the mail got in:
+
+| Path | When | What Gmail stamps |
+| --- | --- | --- |
+| **Catch-all** | Address is *not* provisioned; the routing rule rewrote it | `X-Gm-Original-To` = the address the sender used; `Delivered-To` = the mailbox |
+| **Provisioned alias** | Address is a real alias on the user; no rewrite | no `X-Gm-Original-To`; `Delivered-To` = the alias (the true recipient) |
+| **Same-mailbox internal** | Sent from this account to one of its own addresses | neither header (verified 2026-08-29) — only `To:` carries it |
+
+pigeon exposes all of them: `originalTo`, `deliveredTo`, `to`. The rule:
 
 ```
-recipient = originalTo or account
+recipient = originalTo                       # catch-all path, rewritten
+         or deliveredTo                      # provisioned alias, not rewritten
+         or first address in `to` that is on identities_list   # internal mail
 ```
 
-**Absence is meaningful.** No `originalTo` means no rewrite happened — the mail
-was addressed to the mailbox itself. `To:` is a cross-check only: it is
-sender-written and absent on BCC, so it never overrides `originalTo`.
+**Never fall back to a hardcoded mailbox address** — that routes every aliased
+identity into the wrong lane, and code that handles only one path silently
+mis-routes the other. Fetch all three fields (they are on every message
+pigeon returns) and take the first that is set. `To:` is last because it is
+sender-written and absent on BCC; it decides only when Gmail stamped nothing.
 
 The cheap sweep is `messages_list` (headers + snippet, no bodies), then
 `get_message` with `format=plain` only for the messages dispatch decided are
@@ -107,16 +120,50 @@ send(account="mail@your-domain",
      to=..., subject=..., body=..., idempotency_key=...)
 ```
 
+There is no `from` parameter in Gmail's API — the identity is a header pigeon
+writes into the raw RFC822, and Gmail validates it against the account's
+send-as list (a bare `400` if unlisted). pigeon checks first:
+
 - `from_identity` must be a verified send-as address on `account`. The check is
-  in the tool handler, before any MIME is built; an unknown address is rejected
-  with the allowed list. A guardrail in a prompt is a suggestion; one in the
-  handler is a control.
-- The identity supplies the `From` display name, `Reply-To` (its own address, so
-  replies re-enter the catch-all and dispatch correctly) and **its own** live
-  signature.
+  in the tool handler, **before any MIME is built**, against a live
+  `sendAs.list` read (no cache to go stale when a human adds an identity); an
+  unknown address is rejected with the allowed list named, so the agent has
+  something actionable instead of a 400 to retry blindly. A guardrail in a
+  prompt is a suggestion; one in the handler is a control.
+- The identity supplies the `From` display name, `Reply-To` (its own address)
+  and **its own** live signature.
 - Leave `from_identity` empty to send as the mailbox itself. Keep that for
   administrative mail, not agent correspondence.
 - `reply`, `forward` and `draft_create` take the same parameter.
+
+### Loop-closing rule
+
+The reply identity comes from the dispatch result. Mail that arrived at
+`hand@your-domain` is replied to *as* Hand: `from_identity` = the recipient
+dispatch produced. `Reply-To` on the same identity keeps the correspondence in
+its lane — the inbound header picks the lane, the lane picks the outbound
+identity, the outbound identity routes the reply back to the same lane. Per-agent
+identity becomes a property of the system, not something the model must
+remember.
+
+### DKIM needs an alias — the three tiers
+
+A verified send-as address gets you the identity but **not the domain DKIM
+signature**. Gmail applies your domain's key only when the `From` address is
+provisioned as an alias on the account. Without one, outbound carries no
+`DKIM-Signature: d=your-domain`; DMARC passes on SPF alignment alone — which
+breaks the moment anyone forwards the message.
+
+| Tier | Mechanism | Cap (Workspace) | Authentication |
+| --- | --- | --- | --- |
+| Receive only | catch-all | unlimited | n/a |
+| Send internal | send-as | 99 per user | SPF-aligned only |
+| Send external | alias + send-as | 30 per user | SPF + DKIM |
+
+Spend the alias budget on identities that correspond with people outside the
+organisation. Anything staying inside passes DMARC on SPF alignment and needs
+no alias. The envelope sender stays the mailbox either way — which is why
+alignment holds, and why an identity on a *different* domain would break it.
 
 ## Labels: two axes, applied in code
 
@@ -162,9 +209,15 @@ Surface the request; do not burn retries on it.
 `gmail.modify` + `gmail.send`. `modify` reads the send-as list (identities,
 signatures); nothing else is requested. See `google-oauth-setup.md`.
 
-## Still unproven
+## Verified 2026-08-29
 
-Per-message `From` display names set in raw MIME have not been exercised against
-Gmail's API on a live identity yet. The design does not depend on it — verified
-send-as entries carry their own display names — but confirm on your first send
-from an alias before relying on it.
+Sending as an agent identity was tested at an external receiver, both without
+and with a provisioned alias behind the send-as entry:
+
+- **Without alias:** no `DKIM-Signature` at all; DMARC passing on SPF alignment alone.
+- **With alias:** `dkim=pass header.i=@<domain>`, `spf=pass`, `dmarc=pass`, no `Sender:` header.
+- Received `From` was `Hand <hand@…>` with `Reply-To hand@…` — the send-as
+  display name carried through raw MIME.
+
+Still open: per-message display names that *differ* from the send-as entry's.
+Nothing depends on it — verified send-as addresses carry their own.

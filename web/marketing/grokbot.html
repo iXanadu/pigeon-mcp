@@ -53,6 +53,7 @@
     <h2>For the owner: what you are setting up</h2>
     <p>You own three things and GrokBot owns none of them: a Google OAuth client, a small server, and a mailbox. Ten minutes by hand, the rest by prompting GrokBot itself. The server is a $5 box — see <a href="your-server.html">Your own server</a>. The Google side is one Web application OAuth client, published to <em>In production</em>, redirect <code>https://&lt;your-host&gt;/oauth/callback</code>. The OAuth guide walks through the consent-screen warnings you will see and why they are fine for a tool you run yourself.</p>
     <p>Then the mailbox. You do not need a Google account per agent. Pick one mailbox — a Workspace user with a catch-all on your domain, or a consumer Gmail using plus-addresses — and add GrokBot’s address under <em>Send mail as</em> with a display name. Any other agents you run get their own address the same way. That list in Gmail settings <strong>is</strong> the registry: pigeon reads it, and an agent can send only as an address on it.</p>
+    <p>One more step for any identity that will write to people <em>outside</em> your organisation: also provision the address as a real alias on the user (Workspace: Admin console → user → alternate emails). Send-as alone gives the identity; only an alias gets your domain’s DKIM signature, and without DKIM the mail passes DMARC on SPF alone and fails the moment someone forwards it. Workspace caps aliases at 30 per user — spend them on externally-facing identities only.</p>
     <p class="m s">Step by step for both Workspace and consumer Gmail: <a href="https://github.com/iXanadu/pigeon-mcp/blob/main/docs/mailroom.md">docs/mailroom.md</a>.</p>
 
     <h2>The connect card</h2>
@@ -78,7 +79,7 @@ will not reuse). Attachments: attachments_json='[{"path": "&lt;path from stage&g
       <li>
         <span class="step-num">1</span>
         <h3>Sweep headers, not bodies</h3>
-        <p><code>messages_list(account, "in:inbox newer_than:1d")</code> returns headers and a snippet per message. The recipient is <code>originalTo</code>, falling back to the mailbox when it is absent — absence means the mail was addressed to the mailbox itself.</p>
+        <p><code>messages_list(account, "in:inbox newer_than:1d")</code> returns headers and a snippet per message. The recipient is <code>originalTo</code> (catch-all path, rewritten) or else <code>deliveredTo</code> (provisioned alias, not rewritten) or else the first address in <code>to</code> that is on <code>identities_list</code> (mail from inside the mailbox stamps neither). Take the first that is set. Never fall back to a hardcoded mailbox — that routes every alias into the wrong lane.</p>
       </li>
       <li>
         <span class="step-num">2</span>
@@ -94,7 +95,7 @@ will not reuse). Attachments: attachments_json='[{"path": "&lt;path from stage&g
       <li>
         <span class="step-num">4</span>
         <h3>Answer as yourself</h3>
-        <p><code>reply(account, message_id, idempotency_key, body, from_identity=…)</code> or <code>send(…)</code> with <code>from_identity</code> set to your address. pigeon writes <code>From</code> with your display name, <code>Reply-To</code> back to you, and your own signature. An address not on <code>identities_list</code> is refused — ask the human, do not retry. Proof runs after every send; <code>ok: false</code> is a tool error.</p>
+        <p><code>reply(account, message_id, idempotency_key, body, from_identity=…)</code> or <code>send(…)</code> with <code>from_identity</code> set to the address dispatch produced — mail that arrived at your address is answered <em>as</em> you, and <code>Reply-To</code> on the same identity keeps the thread in your lane. pigeon writes <code>From</code> with your display name, <code>Reply-To</code> back to you, and your own signature. An address not on <code>identities_list</code> is refused — ask the human, do not retry. Proof runs after every send; <code>ok: false</code> is a tool error.</p>
       </li>
     </ol>
 

@@ -33,6 +33,8 @@ One token can serve many agents. Gmail's send-as list is the registry — never 
 - `send`, `reply`, `forward`, `draft_create` take optional `from_identity`. It must match an entry from that list, case-insensitively, **checked in the handler before any MIME is built**; otherwise the call fails naming the allowed set and nothing is uploaded. The chosen entry supplies `From` display name, `Reply-To` (its `replyToAddress` or itself) and its own live signature. Empty `from_identity` = bare account address, no `Reply-To`.
 - Every message returned by `get_message`, `get_thread`, `messages_list` carries `originalTo` (`X-Gm-Original-To`), `deliveredTo`, `replyTo`, `messageId`, `authResults`. `format=metadata` asks Gmail for headers only (no body fetch).
 - `messages_list(account, query)` lists messages (not threads) with those headers and a snippet.
+- Dispatch rule (documented, agent-side): `recipient = originalTo or deliveredTo or first identity in to`. Catch-all mail is rewritten (`X-Gm-Original-To` set); provisioned aliases are not (`Delivered-To` is the true recipient); same-mailbox internal mail stamps neither. No hardcoded mailbox fallback.
+- Reply identity = dispatch result (`from_identity` on `reply`); `Reply-To` is set to the same identity so the thread stays in its lane.
 - Never request `gmail.settings.sharing`, Admin SDK scopes, or attempt `sendAs.create`/`verify`.
 
 ## What failed, exactly
