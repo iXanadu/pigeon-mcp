@@ -23,11 +23,7 @@ Scopes, all of them, on every account:
 - `https://www.googleapis.com/auth/gmail.modify`
 - `https://www.googleapis.com/auth/gmail.send`
 
-That is enough to search, read, label, trash, archive, draft, send, and reply. Also take:
-
-- `https://www.googleapis.com/auth/gmail.settings.basic`
-
-That is only so send can read the live send-as signature. Do not ask for the full-mail god scope. Do not cache the signature text.
+That is enough to search, read, label, trash, archive, draft, send, and reply — and `gmail.modify` also reads the send-as list, which is where live signatures and verified identities come from. Do not ask for `gmail.settings.basic` (redundant), the full-mail god scope, or any settings-sharing / admin scope. Do not cache the signature text.
 
 ## What failed, exactly
 

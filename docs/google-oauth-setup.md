@@ -28,13 +28,14 @@ For local stdio `accounts_add` only, add a **Desktop** client with redirect
 | Scope | Tier | Why |
 | --- | --- | --- |
 | `gmail.send` | Sensitive | Sending mail on your behalf |
-| `gmail.modify` | Restricted | Reading, composing, labeling, archiving |
-| `gmail.settings.basic` | Restricted | Read send-as signature at send time (not cached) |
+| `gmail.modify` | Restricted | Reading, composing, labeling, archiving — and reading the send-as list (identities, live signatures) |
 
-`gmail.settings.basic` is the one to think hardest about. It can read mail settings;
-in broader Google APIs it also covers filter management. This server uses it for
-live signatures only. If your deployment does not need that, dropping the scope
-requires a code change and re-consent on every connected account.
+Two scopes, nothing else. `gmail.modify` already covers `settings.sendAs`
+**get/list**, so the server does not request `gmail.settings.basic`,
+`gmail.settings.sharing`, any Admin SDK scope, a service account, or domain-wide
+delegation. Creating or verifying a send-as identity is deliberately out of reach —
+that is a two-minute job for a human in Gmail settings. Accounts consented before
+this change (three scopes) keep working without re-consent.
 
 ## Why Google calls the app "unverified"
 

@@ -65,7 +65,7 @@ Quick checklist:
 Privacy / Terms URLs for the consent screen: [`docs/legal/`](docs/legal/README.md)
 (c52.com live: `https://pigeon.c52.com/privacy`, `https://pigeon.c52.com/terms`).
 
-On first connect, Google asks for consent. Scopes are fixed in the server: read/send/organise mail plus read send-as signature (not cached).
+On first connect, Google asks for consent. Scopes are fixed in the server: `gmail.modify` + `gmail.send` — read/send/organise mail; `modify` also reads the send-as list (identities, live signature, not cached).
 
 **No** username/password, app password, or pasted refresh token in chat.
 

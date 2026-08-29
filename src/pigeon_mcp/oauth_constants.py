@@ -1,7 +1,9 @@
+# gmail.modify also covers settings.sendAs get/list (signatures, identities), so no
+# settings scope is requested. Tokens consented under the older three-scope set keep
+# working — Google's refresh honours the superset.
 GMAIL_SCOPES = (
     "https://www.googleapis.com/auth/gmail.modify "
-    "https://www.googleapis.com/auth/gmail.send "
-    "https://www.googleapis.com/auth/gmail.settings.basic"
+    "https://www.googleapis.com/auth/gmail.send"
 )
 
 GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
