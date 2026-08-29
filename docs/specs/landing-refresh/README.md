@@ -135,7 +135,7 @@ below then read as optional shopping rather than eleven decisions.
 
 **13 · The cgtop readout.** Full width, with a one-line caption pointing out that pigeon is
 `uvicorn_gmcp_prod` at 70.5 MB. Ship it untouched — the mess is the credibility. Mail, chat, file
-share, sip-phone, redis and fail2ban all on the one box, none of them large.
+share, a SIP phone, redis and fail2ban all on the one box, none of them large.
 
 **14 · The undo button. NEW.** The only genuinely new copy in this kit. Three short blocks:
 

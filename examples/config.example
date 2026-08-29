@@ -19,10 +19,10 @@ PIGEON_MCP_DOWNLOAD_ROOT=/tmp/pigeon/Inbox
 # OAuth token storage (created on first accounts_add). Must be absolute or ~/… (expanded).
 PIGEON_MCP_TOKENS_DIR=/home/you/.config/pigeon-mcp/tokens
 
-# Register this exact URI on your Google Desktop OAuth client
+# Optional, stdio only: loopback redirect registered on a Google Desktop OAuth client
 PIGEON_MCP_OAUTH_REDIRECT_URI=http://127.0.0.1:8767/oauth/callback
 
-# Hand / public consent — MUST match a Web application OAuth client redirect URI
+# Public consent (agent-initiated) — MUST match the Web application OAuth client redirect URI
 PIGEON_MCP_OAUTH_PUBLIC_REDIRECT_URI=https://your-host.example.com/oauth/callback
 
 # Optional: public MCP URL (defaults to origin of OAUTH_PUBLIC_REDIRECT_URI)

@@ -19,8 +19,8 @@ Gmail connector for MCP clients. One server, many Gmail accounts via OAuth refre
 ## Requirements
 
 - Python 3.12+ (development uses 3.13 via pyenv)
-- Google Cloud **Web application** OAuth client (Hand / HTTP consent via public callback)
-- macOS for the included LaunchAgent scripts (HTTP service); Linux works for manual runs
+- A Google Cloud **Web application** OAuth client with redirect `https://<your-host>/oauth/callback`
+- A Linux or macOS host you control, behind TLS (nginx / Caddy / Cloudflare)
 
 ## Quick start
 
@@ -42,19 +42,9 @@ chmod 600 .keys
 pigeon-doctor
 ```
 
-Fill in `.keys` with your Google OAuth credentials and an HTTP bearer token before running the HTTP transport.
+Fill in `.keys` with the Web client id/secret and a long random `PIGEON_MCP_HTTP_BEARER_TOKEN`. Set `PIGEON_MCP_OAUTH_PUBLIC_REDIRECT_URI` in `.env` to your public callback.
 
 ### Google Cloud Console (one-time)
-
-Hand over HTTP needs a **Web application** OAuth client with redirect
-`https://<your-host>/oauth/callback`. Optional **Desktop** client is only for
-local stdio `accounts_add` (`http://127.0.0.1:8767/oauth/callback`).
-
-**Full guide** (scopes, the unverified-app warning, Workspace vs personal Gmail,
-the 7-day Testing trap, token protection, legal URLs):
-[`docs/google-oauth-setup.md`](docs/google-oauth-setup.md)
-
-Quick checklist:
 
 | Step | Where | What |
 | --- | --- | --- |
@@ -62,73 +52,44 @@ Quick checklist:
 | 2 | OAuth consent screen | **External** → **Publish app** (*In production*). Do **not** stay in Testing (7-day refresh expiry). See the doc for Workspace **Internal**. |
 | 3 | Credentials → Create | **OAuth client ID → Web application** |
 | 4 | Web client | Redirect **`https://<your-host>/oauth/callback`** → `PIGEON_MCP_OAUTH_PUBLIC_REDIRECT_URI` |
-| 5 | `.keys` | Web client id/secret → `PIGEON_MCP_GOOGLE_WEB_CLIENT_ID` / `_SECRET` (see `examples/secrets.example`) |
+| 5 | `.keys` | Web client id/secret → `PIGEON_MCP_GOOGLE_WEB_CLIENT_ID` / `_SECRET` |
 
-Privacy / Terms URLs for the consent screen: [`docs/legal/`](docs/legal/README.md)
-(c52.com live: `https://pigeon.c52.com/privacy`, `https://pigeon.c52.com/terms`).
+**Full guide** (scopes, the unverified-app warning, Workspace vs personal Gmail, the 7-day Testing trap, token protection, legal URLs): [`docs/google-oauth-setup.md`](docs/google-oauth-setup.md). Privacy / Terms URLs for the consent screen: [`docs/legal/`](docs/legal/README.md).
 
-On first connect, Google asks for consent. Scopes are fixed in the server: `gmail.modify` + `gmail.send` — read/send/organise mail; `modify` also reads the send-as list (identities, live signature, not cached).
-
-**No** username/password, app password, or pasted refresh token in chat.
+Scopes are fixed in the server: `gmail.modify` + `gmail.send` — read/send/organise mail; `modify` also reads the send-as list (identities, live signature, not cached). **No** username/password, app password, or pasted refresh token in chat.
 
 ### Connect a mailbox
 
-**Hand / HTTP (recommended):** call `accounts_auth_start`, open the returned
-`auth_url` in a browser, complete consent — the public `/oauth/callback` route
-finishes automatically. Then `accounts_list` over HTTP.
+The agent calls `accounts_auth_start` over HTTP and gets an `auth_url`. A human opens it **on their own computer** (any browser, anywhere — passkeys stay local), picks the Google account, clicks Allow. Google redirects to the public `/oauth/callback`, the server stores the token, and the address shows up in `accounts_list`. That address is the `account` argument for every other tool.
 
-**Local stdio only:** `accounts_add` opens a browser for Google consent. It runs
-on the **stdio** transport (`pigeon-mcp`), not over HTTP.
+This works on a headless server with no tunnel and no token copying — the callback is a public HTTPS URL, not a loopback. Empty `accounts_list` on a fresh host is success, not a fault.
 
-```bash
-pigeon-mcp   # stdio — required for accounts_add and accounts_remove
-```
+Tokens land in `PIGEON_MCP_TOKENS_DIR` (default `~/.config/pigeon-mcp/tokens/`) as `gmail-token-<account>.json` (mode 0640). On a production host, point it at a directory your backup sweeps.
 
-Call `accounts_add` from your MCP client. When consent finishes, the server records the Gmail address Google returns; that address is the `account` key for every other tool.
+<details>
+<summary>Optional: local-only stdio with a Desktop client</summary>
 
-Tokens land in `PIGEON_MCP_TOKENS_DIR` (default `~/.config/pigeon-mcp/tokens/`) as `gmail-token-<account>.json` (mode 0640). On a production host, set `PIGEON_MCP_TOKENS_DIR` to a directory your backup actually sweeps (often next to the app checkout), then copy the token files there.
-
-#### Headless server (no local browser)
-
-The OAuth callback is `http://127.0.0.1:8767/oauth/callback`. A machine with no display still needs a browser **somewhere** for the Google login page. Two common patterns:
-
-**A — SSH port forward (consent on your laptop)**
-
-On the headless host, start stdio MCP / `accounts_add`. From your laptop:
-
-```bash
-ssh -L 8767:127.0.0.1:8767 user@headless-host
-```
-
-Open the authorization URL the server prints (or trigger `accounts_add` through your MCP client with the tunnel up). The callback hits `127.0.0.1:8767` on the headless host via the tunnel.
-
-**B — Consent on a desktop, copy tokens**
-
-Run `accounts_add` once on a Mac or PC with a browser and the same `.env` / `.keys`. After consent, copy the `gmail-token-*.json` files to the production host’s `PIGEON_MCP_TOKENS_DIR` (mode 0640). No re-consent unless Google revokes the refresh token.
+If you run pigeon purely on your own machine over stdio and never expose HTTP, you can add a Google **Desktop** OAuth client (redirect `http://127.0.0.1:8767/oauth/callback`) to `.keys` as `PIGEON_MCP_GOOGLE_CLIENT_ID` / `_SECRET` and use `accounts_add`, which opens a local browser. `accounts_add` / `accounts_remove` exist only on the stdio transport. Most deployments do not need this.
+</details>
 
 ## Deployment layout
 
-Typical production split:
-
 ```
-┌─────────────────────┐         ┌──────────────────────────┐
-│  Operator machine   │         │  MCP server (Linux/macOS) │
-│  (browser for OAuth)│         │  pigeon-mcp-http           │
-│  accounts_add       │  copy   │  127.0.0.1:8879           │
-│  token files ───────┼────────►│  + .env / .keys           │
-└─────────────────────┘  tokens └───────────┬──────────────┘
-                                            │
-                              Cloudflare / gateway / TLS
-                                            │
-                                    Hand / remote MCP client
+┌──────────────────────┐        ┌──────────────────────────────┐
+│  Any browser         │        │  Your server (Linux/macOS)   │
+│  (human clicks Allow)│──────► │  TLS proxy ─► pigeon-mcp-http │
+│                      │ /oauth │  127.0.0.1:8879  + .env/.keys │
+└──────────────────────┘callback└──────────────┬───────────────┘
+                                               │ /mcp  /outbox/stage
+                                        agent seat (bearer)
 ```
 
-- **Do not** expose the operator's laptop to the public internet for MCP HTTP. HTTP binds **loopback** (`127.0.0.1:8879`) on the server; a reverse proxy terminates TLS and forwards to that port.
-- **OAuth** happens where a browser exists (operator machine or SSH tunnel). Token JSON files are copied to the server.
-- **Gateway** points at the **server** hostname you control (e.g. `mcp.example.com`), not the OAuth workstation.
-- Generate a long random `PIGEON_MCP_HTTP_BEARER_TOKEN`; the gateway presents it as `Authorization: Bearer …`.
+- `pigeon-mcp-http` binds **loopback** (`127.0.0.1:8879`); the proxy terminates TLS and forwards `/mcp`, `/outbox/stage`, `/oauth/callback`, `/healthz`.
+- The bearer is transport auth: the proxy or the agent presents `Authorization: Bearer …` on `/mcp` and `/outbox/stage`. `/oauth/callback` is public by necessity (a browser redirect carries no bearer); it is protected by single-use `state` + PKCE and only a bearer-authenticated caller can start a flow.
+- If you put an access gate (e.g. Cloudflare Access) in front of the host, **exempt `/oauth/callback`** or consent dies after the user clicks Allow.
+- In-repo deploy kit for the reference host: [`deploy/DEPLOYING.md`](deploy/DEPLOYING.md).
 
-After deploy: `pigeon-doctor`, `./scripts/start.sh` (macOS LaunchAgent) or your own systemd unit, then `accounts_list` over HTTP to confirm tokens.
+After deploy: `pigeon-doctor`, start the service (systemd on Linux, `./scripts/start.sh` LaunchAgent on macOS), then `accounts_list` over HTTP.
 
 ## Configuration
 
@@ -143,27 +104,24 @@ Non-sensitive settings live in `.env`; secrets in `.keys` (never commit either w
 | `PIGEON_MCP_OUTBOX_ROOT` | `.env` | Send/stage attachment paths (pick per machine; `/tmp/...` fine on personal hosts) |
 | `PIGEON_MCP_DOWNLOAD_ROOT` | `.env` | `get_attachment` writes |
 | `PIGEON_MCP_TOKENS_DIR` | `.env` | OAuth token storage directory |
-| `PIGEON_MCP_OAUTH_REDIRECT_URI` | `.env` | OAuth loopback callback (stdio Desktop client) |
-| `PIGEON_MCP_OAUTH_PUBLIC_REDIRECT_URI` | `.env` | Public HTTPS callback (Web client / Hand) |
+| `PIGEON_MCP_OAUTH_PUBLIC_REDIRECT_URI` | `.env` | Public HTTPS callback — must match the Web client exactly |
 | `PIGEON_MCP_GOOGLE_WEB_CLIENT_ID` | `.keys` | Google Web OAuth client id |
 | `PIGEON_MCP_GOOGLE_WEB_CLIENT_SECRET` | `.keys` | Google Web OAuth client secret |
-| `PIGEON_MCP_GOOGLE_CLIENT_ID` | `.keys` | Optional Desktop client (stdio) |
-| `PIGEON_MCP_GOOGLE_CLIENT_SECRET` | `.keys` | Optional Desktop client secret |
 | `PIGEON_MCP_HTTP_BEARER_TOKEN` | `.keys` | Bearer token for HTTP transport |
+| `PIGEON_MCP_OAUTH_REDIRECT_URI` | `.env` | *Optional, stdio only:* loopback callback for a Desktop client |
+| `PIGEON_MCP_GOOGLE_CLIENT_ID` / `_SECRET` | `.keys` | *Optional, stdio only:* Desktop client for local `accounts_add` |
 
 Run `pigeon-doctor` after changing config.
 
 ## Transports
 
-### stdio (local)
+### stdio (local harness)
 
 ```bash
 pigeon-mcp
 ```
 
-Registers **all** tools, including `accounts_add` and `accounts_remove`.
-
-Wire into Cursor / Claude Code MCP config with the venv `pigeon-mcp` binary and `cwd` set to the repo (so `.env` / `.keys` load).
+Same tools as HTTP plus `accounts_add` / `accounts_remove` (local Desktop-client consent). Wire into Cursor / Claude Code MCP config with the venv `pigeon-mcp` binary and `cwd` set to the repo (so `.env` / `.keys` load).
 
 ### Streamable HTTP (gateway)
 
@@ -173,9 +131,9 @@ pigeon-mcp-http
 
 Binds `127.0.0.1:8879` by default. Requires `Authorization: Bearer <PIGEON_MCP_HTTP_BEARER_TOKEN>`; requests without a valid token get **401**.
 
-**Hand allow-list** (HTTP only): read/organise tools plus `send`, `reply`, `forward`, `draft_create`, `draft_send`, `identities_list`, `messages_list`, `accounts_list`, `accounts_auth_start`, and `gmail_status`. Account management (`accounts_add` / `accounts_remove`) stays on stdio.
+**HTTP allow-list:** read/organise tools plus `send`, `reply`, `forward`, `draft_create`, `draft_send`, `identities_list`, `messages_list`, `accounts_list`, `accounts_auth_start`, and `gmail_status`. `accounts_add` / `accounts_remove` stay on stdio.
 
-**Stage attachments for Hand** (no scp required):
+**Stage attachments** (no scp required):
 
 ```bash
 curl -sS -X POST "https://pigeon.c52.com/outbox/stage?filename=deed.pdf" \
@@ -204,7 +162,8 @@ On Linux, run `pigeon-mcp-http` under systemd with the same loopback bind — se
 | --- | --- |
 | `gmail_status` | Version and config summary |
 | `accounts_list` | Connected addresses and token health |
-| `accounts_add` | OAuth consent (**stdio only**) |
+| `accounts_auth_start` | Start Google consent over HTTP; returns `auth_url` for a human |
+| `accounts_add` | Local Desktop-client consent (**stdio only**, optional) |
 | `accounts_remove` | Revoke and drop token (**stdio only**) |
 | `identities_list` | Verified send-as identities for an account — the only values `from_identity` accepts |
 | `search` | Gmail query; returns threads |
