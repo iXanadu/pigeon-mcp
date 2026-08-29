@@ -6,7 +6,7 @@ Open items only. Host topology and session state live in engram (`startup/next`,
 
 ## Open
 
-- [ ] **Mailroom live proof** (owner): prod app is @ `cca660e` (deployed 2026-08-29); on the mailroom account add one send-as alias in Gmail settings; `identities_list` shows it; `send` with `from_identity` → check received `From` display name + `Reply-To` + alias signature (artifact's "still unproven" item). Closes the first-live-send item below too
+- [ ] **Mailroom live proof** (Hand): prod @ `46ab5f7`. `identities_list` PROVEN live 2026-08-29 (mailroom account lists primary + 5 verified aliases). Still owed: `send` with `from_identity` → received `From` display name + `Reply-To` + alias signature (artifact's "still unproven"); inbound mail to an alias → `messages_list` shows `originalTo`
 - [ ] Mailroom inbound proof: mail an alias on the catch-all, `messages_list` shows `originalTo` = alias, `deliveredTo` = mailbox
 - [ ] Public gateway: wire `/healthz` (loopback 200; `https://pigeon.c52.com/healthz` still 404 — nginx location)
 - [ ] First live **send** from the production host after OAuth heal (mailboxes active @ `79b6a5c`; send still the acceptance proof)
