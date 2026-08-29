@@ -203,7 +203,8 @@ def build_mcp(*, http: bool = False) -> MCPServer:
 
     @mcp.tool()
     async def accounts_auth_start() -> str:
-        """Start GrokBot/Hand OAuth. Returns a Google URL; completion is via /oauth/callback."""
+        """Start Google OAuth for a mailbox over HTTP. Returns auth_url for a human to open;
+        consent completes via the public /oauth/callback and the account appears in accounts_list."""
         result = await accounts_mod.accounts_auth_start()
         return json.dumps(result, indent=2)
 
