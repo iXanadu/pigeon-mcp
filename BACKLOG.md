@@ -6,10 +6,7 @@ Open items only. Host topology and session state live in engram (`startup/next`,
 
 ## Open
 
-- [ ] **Mailroom live proof** (Hand): prod @ `46ab5f7`. `identities_list` PROVEN live 2026-08-29 (mailroom account lists primary + 5 verified aliases). Still owed: `send` with `from_identity` → received `From` display name + `Reply-To` + alias signature (artifact's "still unproven"); inbound mail to an alias → `messages_list` shows `originalTo`
-- [ ] Mailroom inbound proof: mail an alias on the catch-all, `messages_list` shows `originalTo` = alias, `deliveredTo` = mailbox
 - [ ] Public gateway: wire `/healthz` (loopback 200; `https://pigeon.c52.com/healthz` still 404 — nginx location)
-- [ ] First live **send** from the production host after OAuth heal (mailboxes active @ `79b6a5c`; send still the acceptance proof)
 - [ ] Optional later: drop `gmcp.c52.com` DNS + LE cert + empty `/var/www/gmcp-static` once redirect window is enough (nginx retire vhost live 2026-08-29: pages 301→pigeon, API 410)
 - [ ] Owner: remove any leftover `https://gmcp.c52.com/oauth/callback` from Google Cloud Web client redirect URIs (app already uses pigeon only)
 - [ ] Optional smoke: inbound `get_attachment`; large zip under Gmail’s ~25MB cap
@@ -24,6 +21,7 @@ Open items only. Host topology and session state live in engram (`startup/next`,
 
 ## Done recently (do not re-open)
 
+- **Mailroom LIVE PROOF (2026-08-29, GrokBot seat):** `identities_list` → 6 accepted addresses on the mailroom account; `messages_list` sweeps `originalTo`/`authResults`; `send` with `from_identity` landed as `Hand <hand@…>` with matching `Reply-To`. First prod send done. Page nits fixed `2f36843`
 - **Mailroom identities (2026-08-29, deployed `cca660e`):** `identities_list` tool; `from_identity` on send/reply/forward/draft_create (handler-validated, From display name, Reply-To, alias signature); `originalTo`/`deliveredTo`/`replyTo`/`authResults` on reads; `format=metadata`; `messages_list`; dropped `gmail.settings.basic` (modify covers sendAs); `docs/mailroom.md`; README/spec/marketing updated; `grokbot.html` + nav link on all pages; Overview GrokBot CTA; nginx `location = /grokbot` added on `pigeon_c52_prod` (backup `/etc/nginx/backups/pigeon_c52_prod.bak.20260829181658`)
 - **`gmcp.c52.com` hostname retire (2026-08-29):** nginx retire vhost — pages 301→`pigeon.c52.com`; MCP/write/OAuth API → 410; admin retargeted SiteWatch to pigeon + bible recaptured (ok 4/4)
 - **Marketing press refresh:** landing-refresh kit → live `e3e5948` / `?v=fix5` — mast layout, hero unsquashed, Hand scrubbed, your-server H1/aside balance; owner + GrokBot accepted
