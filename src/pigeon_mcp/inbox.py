@@ -12,6 +12,7 @@ from pigeon_mcp.gmail_client import (
     get_message,
     get_thread,
     list_labels,
+    list_messages,
     list_threads,
     modify_thread,
     send_draft,
@@ -33,6 +34,15 @@ def format_result(result: Any) -> str:
     return json.dumps(result, indent=2)
 
 
+def _detail_and_fmt(format: str) -> tuple[str, str]:
+    """Map tool format → (summary detail, Gmail API format)."""
+    if format == "full":
+        return "full", "full"
+    if format == "metadata":
+        return "metadata", "metadata"
+    return "plain", "full"
+
+
 def _summarize_message(msg: dict, *, detail: str = "plain") -> dict[str, Any]:
     headers = parse_message_headers(msg)
     out: dict[str, Any] = {
@@ -40,8 +50,17 @@ def _summarize_message(msg: dict, *, detail: str = "plain") -> dict[str, Any]:
         "threadId": msg.get("threadId"),
         "from": headers.get("from", ""),
         "to": headers.get("to", ""),
+        "cc": headers.get("cc", ""),
         "subject": headers.get("subject", ""),
         "date": headers.get("date", ""),
+        "messageId": headers.get("message-id", ""),
+        "replyTo": headers.get("reply-to", ""),
+        # Real recipient. Behind a catch-all, Delivered-To is the mailbox, not the
+        # address the sender used; X-Gm-Original-To keeps the original. Absent
+        # means no rewrite happened — the mail was addressed to the mailbox itself.
+        "deliveredTo": headers.get("delivered-to", ""),
+        "originalTo": headers.get("x-gm-original-to", ""),
+        "authResults": headers.get("authentication-results", ""),
         "snippet": msg.get("snippet", ""),
         "labelIds": msg.get("labelIds", []),
     }
@@ -102,10 +121,33 @@ async def search(
     }
 
 
+async def messages_list(
+    account: str,
+    query: str,
+    max_results: int = 25,
+    page_token: str = "",
+) -> dict[str, Any]:
+    """Per-message metadata sweep: headers + snippet, no bodies. Built for dispatch."""
+    token = await access_token_for(account)
+    listing = await list_messages(
+        token, query, max_results=max(1, min(max_results, 100)), page_token=page_token
+    )
+    messages = []
+    for stub in listing.get("messages", []):
+        msg = await get_message(token, stub["id"], fmt="metadata")
+        messages.append(_summarize_message(msg, detail="metadata"))
+    return {
+        "account": account,
+        "query": query,
+        "messages": messages,
+        "nextPageToken": listing.get("nextPageToken", ""),
+    }
+
+
 async def get_thread_messages(account: str, thread_id: str, format: str = "plain") -> dict[str, Any]:
     token = await access_token_for(account)
-    detail = "full" if format == "full" else "plain"
-    thread = await get_thread(token, thread_id, fmt="full")
+    detail, fmt = _detail_and_fmt(format)
+    thread = await get_thread(token, thread_id, fmt=fmt)
     messages = [
         _summarize_message(m, detail=detail)
         for m in thread.get("messages", [])
@@ -115,8 +157,8 @@ async def get_thread_messages(account: str, thread_id: str, format: str = "plain
 
 async def get_message_detail(account: str, message_id: str, format: str = "plain") -> dict[str, Any]:
     token = await access_token_for(account)
-    detail = "full" if format == "full" else "plain"
-    msg = await get_message(token, message_id, fmt="full")
+    detail, fmt = _detail_and_fmt(format)
+    msg = await get_message(token, message_id, fmt=fmt)
     return {"account": account, **_summarize_message(msg, detail=detail)}
 
 

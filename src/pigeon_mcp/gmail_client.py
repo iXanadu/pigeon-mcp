@@ -47,13 +47,52 @@ async def _request(
         return r.content
 
 
+# Headers worth having on every message without fetching a body. X-Gm-Original-To
+# is the real recipient behind a catch-all rewrite; Authentication-Results carries
+# the dkim/dmarc verdicts.
+DISPATCH_HEADERS = (
+    "From",
+    "To",
+    "Cc",
+    "Subject",
+    "Date",
+    "Message-ID",
+    "Reply-To",
+    "Delivered-To",
+    "X-Gm-Original-To",
+    "Authentication-Results",
+)
+
+
+def _format_params(fmt: str) -> list[tuple[str, str]]:
+    params: list[tuple[str, str]] = [("format", fmt)]
+    if fmt == "metadata":
+        params.extend(("metadataHeaders", h) for h in DISPATCH_HEADERS)
+    return params
+
+
 async def get_message(access_token: str, message_id: str, fmt: str = "metadata") -> dict:
     result = await _request(
         "GET",
         f"{GMAIL_API}/users/me/messages/{message_id}",
         access_token,
-        params={"format": fmt},
+        params=_format_params(fmt),
     )
+    assert isinstance(result, dict)
+    return result
+
+
+async def list_messages(
+    access_token: str,
+    query: str,
+    *,
+    max_results: int = 25,
+    page_token: str = "",
+) -> dict:
+    params: dict[str, Any] = {"q": query, "maxResults": max_results}
+    if page_token:
+        params["pageToken"] = page_token
+    result = await _request("GET", f"{GMAIL_API}/users/me/messages", access_token, params=params)
     assert isinstance(result, dict)
     return result
 
@@ -78,7 +117,7 @@ async def get_thread(access_token: str, thread_id: str, fmt: str = "full") -> di
         "GET",
         f"{GMAIL_API}/users/me/threads/{thread_id}",
         access_token,
-        params={"format": fmt},
+        params=_format_params(fmt),
     )
     assert isinstance(result, dict)
     return result

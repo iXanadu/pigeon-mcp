@@ -28,6 +28,7 @@ HTTP_TOOL_NAMES = frozenset(
         "accounts_auth_start",
         "identities_list",
         "search",
+        "messages_list",
         "get_thread",
         "get_message",
         "get_attachment",
@@ -324,15 +325,33 @@ def build_mcp(*, http: bool = False) -> MCPServer:
         )
 
     @mcp.tool()
+    async def messages_list(
+        account: str,
+        query: str,
+        max_results: int = 25,
+        page_token: str = "",
+    ) -> str:
+        """List messages (not threads) with headers only — no bodies. Use for routing
+        sweeps: originalTo is the real recipient behind a catch-all; authResults carries
+        dkim/dmarc. Fetch bodies afterwards with get_message only where needed."""
+        return inbox_mod.format_result(
+            await inbox_mod.messages_list(
+                account, query, max_results=max_results, page_token=page_token
+            )
+        )
+
+    @mcp.tool()
     async def get_thread(account: str, thread_id: str, format: str = "plain") -> str:
-        """Get messages on a thread. format=full includes HTML and attachment metadata."""
+        """Get messages on a thread. format=metadata is headers+snippet only (cheap);
+        plain adds the text body; full adds HTML and attachment metadata."""
         return inbox_mod.format_result(
             await inbox_mod.get_thread_messages(account, thread_id, format=format)
         )
 
     @mcp.tool()
     async def get_message(account: str, message_id: str, format: str = "plain") -> str:
-        """Get one message. format=full includes HTML and attachment metadata."""
+        """Get one message. format=metadata is headers+snippet only (cheap); plain adds
+        the text body; full adds HTML and attachment metadata."""
         return inbox_mod.format_result(
             await inbox_mod.get_message_detail(account, message_id, format=format)
         )
