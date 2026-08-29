@@ -15,14 +15,14 @@ from pigeon_mcp.token_store import AccountToken, TokenStore
 GMAIL = "https://gmail.googleapis.com/gmail/v1"
 
 HEADERS = [
-    {"name": "From", "value": "Someone <someone@else.com>"},
+    {"name": "From", "value": "Someone <someone@example.net>"},
     {"name": "To", "value": "engram@example.com"},
     {"name": "Subject", "value": "Hello"},
     {"name": "Delivered-To", "value": "mail@example.com"},
     {"name": "X-Gm-Original-To", "value": "engram@example.com"},
-    {"name": "Reply-To", "value": "someone@else.com"},
+    {"name": "Reply-To", "value": "someone@example.net"},
     {"name": "Authentication-Results", "value": "mx.google.com; dkim=pass; dmarc=pass"},
-    {"name": "Message-ID", "value": "<abc@else.com>"},
+    {"name": "Message-ID", "value": "<abc@example.net>"},
 ]
 
 
@@ -55,9 +55,9 @@ async def test_get_message_metadata_exposes_dispatch_headers(env):
     result = await get_message_detail("mail@example.com", "m1", format="metadata")
     assert result["deliveredTo"] == "mail@example.com"
     assert result["originalTo"] == "engram@example.com"
-    assert result["replyTo"] == "someone@else.com"
+    assert result["replyTo"] == "someone@example.net"
     assert "dkim=pass" in result["authResults"]
-    assert result["messageId"] == "<abc@else.com>"
+    assert result["messageId"] == "<abc@example.net>"
     assert "body" not in result
     # metadata request asks Gmail for exactly the dispatch headers, no body
     url = str(route.calls[0].request.url)
