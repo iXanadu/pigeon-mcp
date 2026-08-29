@@ -7,25 +7,32 @@ repo.
 
 ## Connect card
 
+Point the agent at the MCP URL. When it asks for the bearer token, give it —
+the agent keeps it in its own vault, uses it on every call, and never shows it.
+Agents differ in how they ask; let yours lead.
+
 ```
-Connector:  Streamable MCP
-URL:        https://<your-host>/mcp
-Auth:       Authorization: Bearer <token from the operator>
-Stage:      POST https://<your-host>/outbox/stage?filename=…   (same bearer)
+MCP URL:   https://<your-host>/mcp
+Token:     give it to the agent when it asks
 
-First run:  accounts_list        → empty is success on a fresh host
-            accounts_auth_start  → hand the auth_url to the human, they Allow
-            identities_list      → your address should be on it; if not, ask the human
-
-Every mail tool takes account=<the connected mailbox>.
-Send as yourself with from_identity=<your address>.
-send / reply / forward / draft_send need a unique idempotency_key (any string
-you will not reuse). Attachments: attachments_json='[{"path": "<path from stage>"}]'.
+Then, in conversation:
+  accounts_list        empty on a fresh host is fine
+  accounts_auth_start  open the link it gives you, Allow
+  identities_list      the agent's address should be on it
 ```
 
-Do not invent a second OAuth dance for the MCP transport — the header bearer
-**is** transport auth. `/.well-known/oauth-*` returning 404 is intentional:
-probe, get 404, fall back to the static bearer. Do not report it as broken.
+The token is transport auth — there is no second OAuth step for the MCP
+itself, and `/.well-known/oauth-*` returning 404 is intentional.
+
+### What the agent needs to know (not the human)
+
+- Every mail tool takes `account=<the connected mailbox>`.
+- Send as yourself with `from_identity=<your address>`.
+- `send` / `reply` / `forward` / `draft_send` need a unique `idempotency_key`.
+- Attachments: stage the file at `POST /outbox/stage?filename=…` (same bearer),
+  then `attachments_json='[{"path": "<path from stage>"}]'`.
+- CLI harnesses (Claude Code, Cursor) that cannot prompt for a secret take the
+  bearer as an `Authorization: Bearer …` header in their MCP config instead.
 
 ## Connecting a mailbox
 

@@ -57,22 +57,16 @@
     <p class="m s">Step by step for both Workspace and consumer Gmail: <a href="https://github.com/iXanadu/pigeon-mcp/blob/main/docs/mailroom.md">docs/mailroom.md</a>.</p>
 
     <h2>The connect card</h2>
-    <p>Paste this to GrokBot once the server is up. Replace the host and the bearer the operator issued.</p>
-    <pre><code>Connector:  Streamable MCP
-URL:        https://&lt;your-host&gt;/mcp
-Auth:       Authorization: Bearer &lt;token from the operator&gt;
-Stage:      POST https://&lt;your-host&gt;/outbox/stage?filename=…  (same bearer)
+    <p>Point GrokBot at the MCP URL. When it asks for the bearer token, give it — the bot stores it in its own vault, uses it on every call, and never shows it. That is the whole handshake; agents differ in how they ask, so let yours lead.</p>
+    <pre><code>MCP URL:   https://&lt;your-host&gt;/mcp
+Token:     give it to the bot when it asks
 
-First run:  accounts_list        → empty is success on a fresh host
-            accounts_auth_start  → hand the auth_url to the human, they Allow
-            identities_list      → your address should be on it; if not, ask the human
-
-Every mail tool takes account=&lt;the connected mailbox&gt;.
-Send as yourself with from_identity=&lt;your address&gt;.
-send / reply / forward / draft_send need a unique idempotency_key (any string you
-will not reuse). Attachments: attachments_json='[{"path": "&lt;path from stage&gt;"}]'.
+Then, in conversation:
+  accounts_list        empty on a fresh host is fine
+  accounts_auth_start  open the link it gives you, Allow
+  identities_list      your bot's address should be on it
 </code></pre>
-    <p class="m s">Do not invent a second OAuth dance for the MCP transport — the header bearer is transport auth. <code>/.well-known/oauth-*</code> 404s are intentional. This card and every rule below, as a file you can hand a seat: <a href="https://github.com/iXanadu/pigeon-mcp/blob/main/docs/for-agents.md">docs/for-agents.md</a>.</p>
+    <p class="m s">The token is transport auth — there is no second OAuth step for the MCP itself, and <code>/.well-known/oauth-*</code> 404s are intentional. Full tool reference and rules for the seat: <a href="https://github.com/iXanadu/pigeon-mcp/blob/main/docs/for-agents.md">docs/for-agents.md</a>.</p>
 
     <h2>For GrokBot: how the mailroom works</h2>
     <ol class="steps-across">
