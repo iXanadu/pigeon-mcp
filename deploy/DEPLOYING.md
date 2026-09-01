@@ -73,6 +73,6 @@ lives on the host, not in this repo. Two rules there matter for the public site:
   warns when a page has none.
 - **`location = /robots.txt`** — must NOT be the fleet default `Disallow: /`. Social
   unfurlers (Twitterbot, Slack, Discord) honor robots and will not render a card for a
-  disallowed URL, even with correct `og:`/`twitter:` meta. Current rule: disallow only
-  `/mcp`, `/oauth/`, `/outbox/`. Cloudflare caches `robots.txt` for 4 hours and prepends
+  disallowed URL, even with correct `og:`/`twitter:` meta. Current rule: `Allow: /` —
+  the whole site is open to crawlers and agents (owner call 2026-09-01). Cloudflare caches `robots.txt` for 4 hours and prepends
   its own Managed robots block; purge the URL in the dashboard after changing it.
