@@ -63,3 +63,16 @@ change breaks one, deployment breaks:
 
 Points 4 and 5 are not hypothetical; both cost us a debugging cycle on the first
 real deployment, and 5 silently removed OAuth refresh tokens from backup.
+
+## Host nginx rules the deploy scripts do not own
+
+The marketing vhost (`NGINX_VHOST`, default `/etc/nginx/sites-available/pigeon_c52_prod`)
+lives on the host, not in this repo. Two rules there matter for the public site:
+
+- **`location = /<page>`** — every marketing page needs one or it 404s. `deploy-static.sh`
+  warns when a page has none.
+- **`location = /robots.txt`** — must NOT be the fleet default `Disallow: /`. Social
+  unfurlers (Twitterbot, Slack, Discord) honor robots and will not render a card for a
+  disallowed URL, even with correct `og:`/`twitter:` meta. Current rule: disallow only
+  `/mcp`, `/oauth/`, `/outbox/`. Cloudflare caches `robots.txt` for 4 hours and prepends
+  its own Managed robots block; purge the URL in the dashboard after changing it.
