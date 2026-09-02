@@ -1,6 +1,6 @@
 # pigeon-mcp backlog
 
-Last updated: 2026-09-01 (robots fix on host)
+Last updated: 2026-09-02 (robots open on all agent sites)
 
 Open items only. Host topology and session state live in engram (`startup/next`, `deploy/*`).
 
@@ -9,7 +9,6 @@ Open items only. Host topology and session state live in engram (`startup/next`,
 ### NEEDS-DECISION (owner)
 - [ ] **Google Console:** remove any leftover `https://gmcp.c52.com/oauth/callback` from the Web client redirect URIs (owner-only surface).
 - [ ] **Cloudflare:** `gmcp.c52.com` still resolved to Cloudflare edge IPs at 22:50Z 2026-08-29 — confirm the DNS record is actually deleted (nothing serves it any more: vhost disabled, cert deleted, static dir archived under `/etc/nginx/backups/gmcp-retire-final/`).
-- [ ] **Cloudflare Managed robots.txt (owner, dashboard):** turn it OFF on the `c52.com` and `tiding.sh` zones. It prepends `Disallow: /` for ClaudeBot, GPTBot, CCBot, Bytespider, meta-externalagent and others on agent-facing sites (pigeon, share, tiding). Decision made 2026-09-01: entire sites open to agents. Origins already serve `Allow: /`; the fleet API tokens lack Zone Settings scope so this cannot be scripted.
 - [ ] **GitHub dangling objects:** a force-push does not purge old commits from GitHub's object store immediately (reachable by SHA for a while). If that matters, ask GitHub Support to run a GC on the repo; otherwise it ages out.
 
 ### DEGRADING
