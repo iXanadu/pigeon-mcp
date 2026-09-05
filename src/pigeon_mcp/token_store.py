@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import os
 import re
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -65,9 +65,37 @@ class AccountToken:
         return asdict(self)
 
 
+def _durable(token: AccountToken) -> tuple[str, ...]:
+    """Fields that belong on disk. Access tokens rotate ~hourly — rewriting them
+    makes backup classifiers treat a cache write as a secret rotation."""
+    return (
+        token.email,
+        token.refresh_token,
+        token.scopes or "",
+        token.status,
+        token.last_error or "",
+        token.client_id or "",
+    )
+
+
+def _disk_payload(token: AccountToken) -> dict[str, Any]:
+    data = token.to_dict()
+    data["access_token"] = ""
+    data["expires_at"] = None
+    return data
+
+
+# Process-wide live access tokens. TokenStore is constructed per call, so this
+# cannot live on the instance. Keyed by (tokens_dir, email).
+_LIVE: dict[tuple[str, str], AccountToken] = {}
+
+
 class TokenStore:
     def __init__(self, tokens_dir: Path) -> None:
         self.tokens_dir = tokens_dir.expanduser()
+
+    def _live_key(self, email: str) -> tuple[str, str]:
+        return (str(self.tokens_dir), email.lower())
 
     def ensure_dir(self) -> None:
         self.tokens_dir.mkdir(parents=True, exist_ok=True)
@@ -96,6 +124,17 @@ class TokenStore:
         return emails
 
     def load(self, email: str) -> AccountToken | None:
+        key = self._live_key(email)
+        cached = _LIVE.get(key)
+        if cached is not None:
+            return replace(cached)
+        token = self._load_disk(email)
+        if token is None:
+            return None
+        _LIVE[key] = replace(token)
+        return replace(token)
+
+    def _load_disk(self, email: str) -> AccountToken | None:
         for path in (self.path_for(email), self._legacy_path_for(email)):
             if not path.is_file():
                 continue
@@ -106,15 +145,24 @@ class TokenStore:
         return None
 
     def save(self, token: AccountToken) -> None:
-        self.ensure_dir()
+        _LIVE[self._live_key(token.email)] = replace(token)
         path = self.path_for(token.email)
-        path.write_text(json.dumps(token.to_dict(), indent=2) + "\n", encoding="utf-8")
+        if path.is_file():
+            try:
+                existing = AccountToken.from_dict(json.loads(path.read_text(encoding="utf-8")))
+            except (json.JSONDecodeError, KeyError, OSError):
+                existing = None
+            if existing is not None and _durable(existing) == _durable(token):
+                return
+        self.ensure_dir()
+        path.write_text(json.dumps(_disk_payload(token), indent=2) + "\n", encoding="utf-8")
         os.chmod(path, _FILE_MODE)
         legacy = self._legacy_path_for(token.email)
         if legacy != path and legacy.is_file():
             legacy.unlink()
 
     def delete(self, email: str) -> bool:
+        _LIVE.pop(self._live_key(email), None)
         removed = False
         for path in (self.path_for(email), self._legacy_path_for(email)):
             if path.is_file():

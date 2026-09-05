@@ -1,5 +1,6 @@
 """Tests for OAuth account management."""
 
+import json
 import os
 import stat
 
@@ -16,7 +17,12 @@ from pigeon_mcp.accounts import (
     accounts_remove,
 )
 from pigeon_mcp.config import settings
-from pigeon_mcp.google_oauth import build_auth_url, complete_oauth, refresh_access_token
+from pigeon_mcp.google_oauth import (
+    build_auth_url,
+    complete_oauth,
+    ensure_fresh_token,
+    refresh_access_token,
+)
 from pigeon_mcp.oauth_constants import STATUS_ACTIVE, STATUS_NEEDS_AUTH
 from pigeon_mcp.token_store import AccountToken, TokenStore
 
@@ -345,3 +351,118 @@ async def test_refresh_legacy_token_prefers_web_on_hand_host(token_store, monkey
     form = parse_qs(route.calls.last.request.content.decode())
     assert form["client_id"] == ["web-id"]
     assert form["client_secret"] == ["web-secret"]
+
+
+def test_save_skips_disk_when_only_access_token_changes(token_store):
+    token_store.save(
+        AccountToken(
+            email="cache@example.com",
+            refresh_token="rt",
+            access_token="at-1",
+            expires_at="2026-01-01T00:00:00+00:00",
+            status=STATUS_ACTIVE,
+            client_id="test-client-id",
+        )
+    )
+    path = token_store.path_for("cache@example.com")
+    on_disk = path.read_text(encoding="utf-8")
+    mtime = path.stat().st_mtime
+    token_store.save(
+        AccountToken(
+            email="cache@example.com",
+            refresh_token="rt",
+            access_token="at-2",
+            expires_at="2026-01-01T01:00:00+00:00",
+            status=STATUS_ACTIVE,
+            client_id="test-client-id",
+        )
+    )
+    assert path.read_text(encoding="utf-8") == on_disk
+    assert path.stat().st_mtime == mtime
+    loaded = token_store.load("cache@example.com")
+    assert loaded is not None
+    assert loaded.access_token == "at-2"
+    disk = json.loads(on_disk)
+    assert disk["access_token"] == ""
+    assert disk["expires_at"] is None
+    assert disk["refresh_token"] == "rt"
+
+
+def test_save_writes_when_refresh_token_or_status_changes(token_store):
+    token_store.save(
+        AccountToken(
+            email="durable@example.com",
+            refresh_token="rt-old",
+            access_token="at",
+            status=STATUS_ACTIVE,
+        )
+    )
+    path = token_store.path_for("durable@example.com")
+    token_store.save(
+        AccountToken(
+            email="durable@example.com",
+            refresh_token="rt-new",
+            access_token="at-2",
+            status=STATUS_ACTIVE,
+        )
+    )
+    disk = json.loads(path.read_text(encoding="utf-8"))
+    assert disk["refresh_token"] == "rt-new"
+    token_store.save(
+        AccountToken(
+            email="durable@example.com",
+            refresh_token="rt-new",
+            access_token="at-3",
+            status=STATUS_NEEDS_AUTH,
+            last_error="invalid_grant",
+        )
+    )
+    disk = json.loads(path.read_text(encoding="utf-8"))
+    assert disk["status"] == STATUS_NEEDS_AUTH
+    assert disk["last_error"] == "invalid_grant"
+
+
+def test_live_cache_is_shared_across_store_instances(token_store):
+    token_store.save(
+        AccountToken(
+            email="shared@example.com",
+            refresh_token="rt",
+            access_token="live",
+            status=STATUS_ACTIVE,
+        )
+    )
+    other = TokenStore(token_store.tokens_dir)
+    loaded = other.load("shared@example.com")
+    assert loaded is not None
+    assert loaded.access_token == "live"
+
+
+@respx.mock
+async def test_access_refresh_does_not_rewrite_token_file(token_store):
+    token_store.save(
+        AccountToken(
+            email="hourly@example.com",
+            refresh_token="rt",
+            access_token="expired",
+            expires_at="2020-01-01T00:00:00+00:00",
+            status=STATUS_ACTIVE,
+            client_id="test-client-id",
+        )
+    )
+    path = token_store.path_for("hourly@example.com")
+    on_disk = path.read_text(encoding="utf-8")
+    mtime = path.stat().st_mtime
+    route = respx.post("https://oauth2.googleapis.com/token").mock(
+        return_value=httpx.Response(
+            200, json={"access_token": "fresh-at", "expires_in": 3600}
+        )
+    )
+    first = await ensure_fresh_token(token_store, "hourly@example.com")
+    second = await ensure_fresh_token(token_store, "hourly@example.com")
+    assert first is not None
+    assert first.access_token == "fresh-at"
+    assert second is not None
+    assert second.access_token == "fresh-at"
+    assert route.call_count == 1
+    assert path.read_text(encoding="utf-8") == on_disk
+    assert path.stat().st_mtime == mtime
