@@ -19,7 +19,10 @@ from pigeon_mcp.gmail_client import (
     trash_thread,
     untrash_thread,
     create_draft,
+    create_filter,
     create_label,
+    delete_filter,
+    list_filters,
     parse_message_headers,
 )
 from pigeon_mcp.identities import resolve_sender
@@ -189,6 +192,83 @@ async def labels_create(account: str, name: str) -> dict[str, Any]:
     token = await access_token_for(account)
     label = await create_label(token, name)
     return {"account": account, "id": label["id"], "name": label["name"]}
+
+
+def _summarize_filter(f: dict, label_names: dict[str, str]) -> dict[str, Any]:
+    action = dict(f.get("action", {}))
+    for key in ("addLabelIds", "removeLabelIds"):
+        ids = action.get(key) or []
+        action[key.replace("Ids", "s")] = [label_names.get(i, i) for i in ids]
+    return {"id": f.get("id"), "criteria": f.get("criteria", {}), "action": action}
+
+
+async def filters_list(account: str) -> dict[str, Any]:
+    token = await access_token_for(account)
+    data = await list_filters(token)
+    labels = await list_labels(token)
+    names = {l["id"]: l["name"] for l in labels.get("labels", [])}
+    return {
+        "account": account,
+        "filters": [_summarize_filter(f, names) for f in data.get("filter", [])],
+    }
+
+
+async def filters_create(
+    account: str,
+    from_addr: str = "",
+    to_addr: str = "",
+    subject: str = "",
+    query: str = "",
+    negated_query: str = "",
+    add_labels: str = "",
+    remove_labels: str = "",
+    skip_inbox: bool = False,
+    mark_read: bool = False,
+) -> dict[str, Any]:
+    """Create one Gmail filter. Labels are names or ids and must already exist;
+    skip_inbox/mark_read are shorthands for removing INBOX/UNREAD."""
+    criteria: dict[str, str] = {}
+    for key, value in (
+        ("from", from_addr),
+        ("to", to_addr),
+        ("subject", subject),
+        ("query", query),
+        ("negatedQuery", negated_query),
+    ):
+        if value and value.strip():
+            criteria[key] = value.strip()
+    if not criteria:
+        raise ValueError("filters_create needs at least one criterion (from/to/subject/query)")
+
+    token = await access_token_for(account)
+    add_ids = await _resolve_labels(token, add_labels)
+    remove_ids = await _resolve_labels(token, remove_labels)
+    if skip_inbox and "INBOX" not in remove_ids:
+        remove_ids.append("INBOX")
+    if mark_read and "UNREAD" not in remove_ids:
+        remove_ids.append("UNREAD")
+    action: dict[str, list[str]] = {}
+    if add_ids:
+        action["addLabelIds"] = add_ids
+    if remove_ids:
+        action["removeLabelIds"] = remove_ids
+    if not action:
+        raise ValueError(
+            "filters_create needs an action (add_labels, remove_labels, skip_inbox, mark_read)"
+        )
+
+    created = await create_filter(token, criteria, action)
+    labels = await list_labels(token)
+    names = {l["id"]: l["name"] for l in labels.get("labels", [])}
+    result = _summarize_filter(created, names)
+    result["account"] = account
+    return result
+
+
+async def filters_delete(account: str, filter_id: str) -> dict[str, Any]:
+    token = await access_token_for(account)
+    await delete_filter(token, filter_id.strip())
+    return {"account": account, "deleted": filter_id.strip()}
 
 
 async def label(account: str, thread_id: str, labels: str) -> dict[str, Any]:

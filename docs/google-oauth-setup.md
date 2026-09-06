@@ -29,13 +29,17 @@ For local stdio `accounts_add` only, add a **Desktop** client with redirect
 | --- | --- | --- |
 | `gmail.send` | Sensitive | Sending mail on your behalf |
 | `gmail.modify` | Restricted | Reading, composing, labeling, archiving — and reading the send-as list (identities, live signatures) |
+| `gmail.settings.basic` | Sensitive | Creating and deleting Gmail filters (`filters_create` / `filters_delete`); nothing else uses it |
 
-Two scopes, nothing else. `gmail.modify` already covers `settings.sendAs`
-**get/list**, so the server does not request `gmail.settings.basic`,
+Three scopes, nothing else. `gmail.modify` already covers `settings.sendAs`
+**get/list** and `settings.filters` **list/get**; `gmail.settings.basic` is there
+only because filter create/delete need it. The server does not request
 `gmail.settings.sharing`, any Admin SDK scope, a service account, or domain-wide
 delegation. Creating or verifying a send-as identity is deliberately out of reach —
-that is a two-minute job for a human in Gmail settings. Accounts consented before
-this change (three scopes) keep working without re-consent.
+that is a two-minute job for a human in Gmail settings. An account consented
+without `gmail.settings.basic` keeps working for everything except
+`filters_create` / `filters_delete`, which return Google's 403 — re-consent that
+one mailbox to add the scope.
 
 ## Why Google calls the app "unverified"
 

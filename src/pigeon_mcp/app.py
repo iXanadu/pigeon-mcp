@@ -34,6 +34,9 @@ HTTP_TOOL_NAMES = frozenset(
         "get_attachment",
         "labels_list",
         "labels_create",
+        "filters_list",
+        "filters_create",
+        "filters_delete",
         "label",
         "unlabel",
         "archive",
@@ -379,6 +382,49 @@ def build_mcp(*, http: bool = False) -> MCPServer:
     async def labels_create(account: str, name: str) -> str:
         """Create a user label."""
         return inbox_mod.format_result(await inbox_mod.labels_create(account, name))
+
+    @mcp.tool()
+    async def filters_list(account: str) -> str:
+        """List the account's Gmail filters (id, criteria, action with label names)."""
+        return inbox_mod.format_result(await inbox_mod.filters_list(account))
+
+    @mcp.tool()
+    async def filters_create(
+        account: str,
+        from_addr: str = "",
+        to_addr: str = "",
+        subject: str = "",
+        query: str = "",
+        negated_query: str = "",
+        add_labels: str = "",
+        remove_labels: str = "",
+        skip_inbox: bool = False,
+        mark_read: bool = False,
+    ) -> str:
+        """Create a Gmail filter. Criteria: at least one of from_addr / to_addr / subject /
+        query / negated_query (Gmail search syntax). Action: add_labels and/or remove_labels
+        (comma-separated names or ids, must exist — see labels_create), skip_inbox (drop INBOX),
+        mark_read (drop UNREAD). Needs gmail.settings.basic on the account token; a 403 means
+        re-consent that mailbox."""
+        return inbox_mod.format_result(
+            await inbox_mod.filters_create(
+                account,
+                from_addr=from_addr,
+                to_addr=to_addr,
+                subject=subject,
+                query=query,
+                negated_query=negated_query,
+                add_labels=add_labels,
+                remove_labels=remove_labels,
+                skip_inbox=skip_inbox,
+                mark_read=mark_read,
+            )
+        )
+
+    @mcp.tool()
+    async def filters_delete(account: str, filter_id: str) -> str:
+        """Delete a Gmail filter by id (from filters_list)."""
+        return inbox_mod.format_result(await inbox_mod.filters_delete(account, filter_id))
 
     @mcp.tool()
     async def label(account: str, thread_id: str, labels: str) -> str:

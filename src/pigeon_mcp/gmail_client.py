@@ -166,6 +166,30 @@ async def create_label(access_token: str, name: str) -> dict:
     return result
 
 
+async def list_filters(access_token: str) -> dict:
+    result = await _request("GET", f"{GMAIL_API}/users/me/settings/filters", access_token)
+    assert isinstance(result, dict)
+    return result
+
+
+async def create_filter(access_token: str, criteria: dict, action: dict) -> dict:
+    """users.settings.filters.create — needs gmail.settings.basic on the token."""
+    result = await _request(
+        "POST",
+        f"{GMAIL_API}/users/me/settings/filters",
+        access_token,
+        json_body={"criteria": criteria, "action": action},
+    )
+    assert isinstance(result, dict)
+    return result
+
+
+async def delete_filter(access_token: str, filter_id: str) -> None:
+    await _request(
+        "DELETE", f"{GMAIL_API}/users/me/settings/filters/{filter_id}", access_token
+    )
+
+
 async def trash_thread(access_token: str, thread_id: str) -> dict:
     result = await _request(
         "POST",

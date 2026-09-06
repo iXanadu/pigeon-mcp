@@ -1,6 +1,7 @@
 """Tests for read/organise inbox tools."""
 
 import base64
+import json
 import httpx
 import pytest
 import respx
@@ -10,6 +11,9 @@ from pigeon_mcp.inbox import (
     archive,
     draft_create,
     draft_send,
+    filters_create,
+    filters_delete,
+    filters_list,
     get_attachment_file,
     get_message_detail,
     labels_list,
@@ -186,3 +190,88 @@ async def test_draft_send_with_proof(inbox_env, monkeypatch):
     result = await draft_send("user@example.com", "draft-1", "idem-1")
     assert result["ok"] is True
     assert result["id"] == "sent-1"
+
+
+_LABELS = {
+    "labels": [
+        {"id": "INBOX", "name": "INBOX", "type": "system"},
+        {"id": "UNREAD", "name": "UNREAD", "type": "system"},
+        {"id": "Label_7", "name": "proj/hand", "type": "user"},
+    ]
+}
+
+
+@respx.mock
+async def test_filters_list_resolves_label_names(inbox_env):
+    respx.get(f"{GMAIL}/users/me/settings/filters").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "filter": [
+                    {
+                        "id": "f1",
+                        "criteria": {"to": "hand@example.com"},
+                        "action": {"addLabelIds": ["Label_7"], "removeLabelIds": ["INBOX"]},
+                    }
+                ]
+            },
+        )
+    )
+    respx.get(f"{GMAIL}/users/me/labels").mock(return_value=httpx.Response(200, json=_LABELS))
+    result = await filters_list("user@example.com")
+    f = result["filters"][0]
+    assert f["id"] == "f1"
+    assert f["criteria"] == {"to": "hand@example.com"}
+    assert f["action"]["addLabels"] == ["proj/hand"]
+    assert f["action"]["removeLabels"] == ["INBOX"]
+
+
+@respx.mock
+async def test_filters_create_skip_inbox_with_label_name(inbox_env):
+    respx.get(f"{GMAIL}/users/me/labels").mock(return_value=httpx.Response(200, json=_LABELS))
+    route = respx.post(f"{GMAIL}/users/me/settings/filters").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "id": "f9",
+                "criteria": {"to": "hand@example.com"},
+                "action": {"addLabelIds": ["Label_7"], "removeLabelIds": ["INBOX"]},
+            },
+        )
+    )
+    result = await filters_create(
+        "user@example.com", to_addr="hand@example.com", add_labels="proj/hand", skip_inbox=True
+    )
+    body = json.loads(route.calls.last.request.content)
+    assert body["criteria"] == {"to": "hand@example.com"}
+    assert body["action"] == {"addLabelIds": ["Label_7"], "removeLabelIds": ["INBOX"]}
+    assert result["id"] == "f9"
+    assert result["action"]["addLabels"] == ["proj/hand"]
+
+
+@respx.mock
+async def test_filters_create_rejects_unknown_label(inbox_env):
+    respx.get(f"{GMAIL}/users/me/labels").mock(return_value=httpx.Response(200, json=_LABELS))
+    with pytest.raises(ValueError, match="Unknown label"):
+        await filters_create("user@example.com", from_addr="x@example.com", add_labels="nope")
+
+
+async def test_filters_create_requires_criteria_and_action(inbox_env):
+    with pytest.raises(ValueError, match="criterion"):
+        await filters_create("user@example.com", add_labels="proj/hand")
+    with respx.mock:
+        respx.get(f"{GMAIL}/users/me/labels").mock(
+            return_value=httpx.Response(200, json=_LABELS)
+        )
+        with pytest.raises(ValueError, match="action"):
+            await filters_create("user@example.com", to_addr="hand@example.com")
+
+
+@respx.mock
+async def test_filters_delete(inbox_env):
+    route = respx.delete(f"{GMAIL}/users/me/settings/filters/f1").mock(
+        return_value=httpx.Response(204)
+    )
+    result = await filters_delete("user@example.com", "f1")
+    assert route.called
+    assert result["deleted"] == "f1"

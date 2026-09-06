@@ -91,6 +91,9 @@ address on it. Call `identities_list` once at startup — that is the registry.
   on contents.
 - Labels are per thread — `label(account, thread_id, "triage/unknown")` — and
   must exist first: `labels_create` once per name; `label` rejects unknown names.
+- Route an alias's mail before anyone reads it: `filters_create(account,
+  to_addr="hand@example.com", add_labels="proj/hand", skip_inbox=True)`. Never
+  skip-inbox the primary address. `filters_list` shows what is already set.
 - Reply as the identity the mail arrived at. `from_identity` on `reply` = the
   recipient dispatch produced; that keeps the correspondence in its lane.
 

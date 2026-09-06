@@ -56,7 +56,7 @@ Fill in `.keys` with the Web client id/secret and a long random `PIGEON_MCP_HTTP
 
 **Full guide** (scopes, the unverified-app warning, Workspace vs personal Gmail, the 7-day Testing trap, token protection, legal URLs): [`docs/google-oauth-setup.md`](docs/google-oauth-setup.md). Privacy / Terms URLs for the consent screen: [`docs/legal/`](docs/legal/README.md).
 
-Scopes are fixed in the server: `gmail.modify` + `gmail.send` — read/send/organise mail; `modify` also reads the send-as list (identities, live signature, not cached). **No** username/password, app password, or pasted refresh token in chat.
+Scopes are fixed in the server: `gmail.modify` + `gmail.send` + `gmail.settings.basic` — read/send/organise mail; `modify` also reads the send-as list (identities, live signature, not cached); `settings.basic` exists only so `filters_create` / `filters_delete` work. **No** username/password, app password, or pasted refresh token in chat.
 
 ### Connect a mailbox
 
@@ -173,6 +173,7 @@ On Linux, run `pigeon-mcp-http` under systemd with the same loopback bind — se
 | `send` / `reply` / `forward` | Paths only; rejects `content` / base64 in JSON; optional `from_identity` |
 | `draft_create` / `draft_send` | Same attach/proof rules as send; `draft_create` takes `from_identity` |
 | `labels_list` / `labels_create` | User + system labels |
+| `filters_list` / `filters_create` / `filters_delete` | Gmail filters (server-side routing: `to:` an alias → label + skip inbox) |
 | `label` / `unlabel` | Comma-separated names or ids |
 | `archive` / `trash` / `untrash` | Thread-level |
 

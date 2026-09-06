@@ -93,8 +93,12 @@ messages_list(account, "in:inbox newer_than:1d")
   → get_message(account, id, format="plain") only if it needs reading
 ```
 
-Gmail filters cannot do this — they would key on `Delivered-To`. Apply labels in
-code after dispatch (`label` / `labels_create`).
+Gmail filters (`filters_create`) can pre-sort the *provisioned-alias* path — a
+`to:hand@example.com` criterion with add-label + skip-inbox — and that is the
+cheap way to keep an agent's lane out of the shared inbox. They do not replace
+dispatch: a filter never sees `X-Gm-Original-To`, so catch-all mail still needs
+the header walk above. Apply labels in code after dispatch (`label` /
+`labels_create`) for anything a filter missed.
 
 ## Two trust tiers
 
@@ -206,8 +210,9 @@ Surface the request; do not burn retries on it.
 
 ## Scopes
 
-`gmail.modify` + `gmail.send`. `modify` reads the send-as list (identities,
-signatures); nothing else is requested. See `google-oauth-setup.md`.
+`gmail.modify` + `gmail.send` + `gmail.settings.basic`. `modify` reads the send-as
+list (identities, signatures) and lists filters; `settings.basic` is requested
+only because creating and deleting filters needs it. See `google-oauth-setup.md`.
 
 ## Verified 2026-08-29
 

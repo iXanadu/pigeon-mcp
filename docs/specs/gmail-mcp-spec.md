@@ -22,8 +22,9 @@ Scopes, all of them, on every account:
 
 - `https://www.googleapis.com/auth/gmail.modify`
 - `https://www.googleapis.com/auth/gmail.send`
+- `https://www.googleapis.com/auth/gmail.settings.basic`
 
-That is enough to search, read, label, trash, archive, draft, send, and reply — and `gmail.modify` also reads the send-as list, which is where live signatures and verified identities come from. Do not ask for `gmail.settings.basic` (redundant), the full-mail god scope, or any settings-sharing / admin scope. Do not cache the signature text.
+`modify` + `send` cover search, read, label, trash, archive, draft, send, reply — and `gmail.modify` also reads the send-as list, which is where live signatures and verified identities come from. `settings.basic` is requested for exactly one thing: creating and deleting Gmail filters (the mailroom's server-side routing). Do not ask for the full-mail god scope or any settings-sharing / admin scope. Do not cache the signature text.
 
 ## Identities and routing (mailroom)
 
@@ -112,11 +113,12 @@ Keep the surface small. Cursor shipped thirty-one tools and still could not send
 | `draft.create` / `draft.send` | Same attach and proof rules. |
 | `labels.list` | System + user labels |
 | `labels.create` | User labels (GBOT, GB-clutter, and the rest) |
+| `filters.list` / `filters.create` / `filters.delete` | Gmail filters. Criteria from/to/subject/query; action add/remove labels (names resolved), skip inbox, mark read. Routes an alias's mail out of the shared inbox before any agent reads it. |
 | `label` / `unlabel` | Message or thread. Names or ids. Resolve names. |
 | `archive` | Remove INBOX from a thread |
 | `trash` / `untrash` | Thread. Prefer thread over single message. |
 
-That covers inbox triage and real send. Filters, spam theater, and label color presets are not the hole. Skip them.
+That covers inbox triage, real send, and per-alias routing. Spam theater and label color presets are not the hole. Skip them.
 
 ## Host
 

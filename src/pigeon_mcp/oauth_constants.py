@@ -1,9 +1,11 @@
-# gmail.modify also covers settings.sendAs get/list (signatures, identities), so no
-# settings scope is requested. Tokens consented under the older three-scope set keep
-# working — Google's refresh honours the superset.
+# gmail.modify covers settings.sendAs get/list (signatures, identities) and
+# settings.filters list/get. filters create/delete need gmail.settings.basic —
+# that is the only reason it is requested. Tokens consented under a subset keep
+# working for everything but filters_create / filters_delete.
 GMAIL_SCOPES = (
     "https://www.googleapis.com/auth/gmail.modify "
-    "https://www.googleapis.com/auth/gmail.send"
+    "https://www.googleapis.com/auth/gmail.send "
+    "https://www.googleapis.com/auth/gmail.settings.basic"
 )
 
 GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
