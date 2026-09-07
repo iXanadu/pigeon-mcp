@@ -90,9 +90,11 @@ If `ok` is false, the tool errors. Do not report a successful send.
 
 Every tool except `accounts.list` and `accounts.add` takes `account` (the Gmail address). Wrong account is a hard error, not a guess.
 
-Adding another mailbox is OAuth, not a deploy. One server, N tokens.
+Adding another mailbox is OAuth, not a deploy. One server, N Gmail accounts.
 
-`accounts.list` returns the connected addresses and whether the refresh token still works.
+HTTP bearers are **tenants**. The owner signs in at `/~/` with a passkey, mints a named bearer per harness, and grants mailboxes. `accounts.list` and every mail tool are scoped to that tenant's grants. Only a tenant marked `can_auth_start` (GrokBot / the env bearer) may start Google consent. Coding-agent tenants cannot add mailboxes.
+
+`accounts.list` returns the connected addresses visible to the caller and whether each refresh token still works.
 
 ## Tools (this many, not 31)
 

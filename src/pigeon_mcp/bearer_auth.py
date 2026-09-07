@@ -1,17 +1,23 @@
-"""Static bearer token verification for HTTP transport."""
+"""HTTP bearer → tenant. Env token is seeded as grokbot; named tenants live in SQLite."""
 
 from __future__ import annotations
 
 from mcp.server.auth.provider import AccessToken, TokenVerifier
 
+from pigeon_mcp.tenants import get_store, set_current_tenant
 
-class StaticBearerVerifier:
-    """Accept only the configured bearer token."""
 
-    def __init__(self, expected_token: str) -> None:
-        self.expected_token = expected_token
+class TenantBearerVerifier:
+    """Look up sha256(bearer) in the tenant drawer. Sets request-scoped tenant."""
 
     async def verify_token(self, token: str) -> AccessToken | None:
-        if not self.expected_token or token != self.expected_token:
+        set_current_tenant(None)
+        tenant = get_store().resolve_bearer(token)
+        if tenant is None:
             return None
-        return AccessToken(token=token, client_id="hand", scopes=[])
+        set_current_tenant(tenant)
+        return AccessToken(token=token, client_id=tenant.name, scopes=[])
+
+
+# Older tests / docs may still import this name.
+StaticBearerVerifier = TenantBearerVerifier

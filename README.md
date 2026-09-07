@@ -84,8 +84,8 @@ If you run pigeon purely on your own machine over stdio and never expose HTTP, y
                                         agent seat (bearer)
 ```
 
-- `pigeon-mcp-http` binds **loopback** (`127.0.0.1:8879`); the proxy terminates TLS and forwards `/mcp`, `/outbox/stage`, `/oauth/callback`, `/healthz`.
-- The bearer is transport auth: the proxy or the agent presents `Authorization: Bearer …` on `/mcp` and `/outbox/stage`. `/oauth/callback` is public by necessity (a browser redirect carries no bearer); it is protected by single-use `state` + PKCE and only a bearer-authenticated caller can start a flow.
+- `pigeon-mcp-http` binds **loopback** (`127.0.0.1:8879`); the proxy terminates TLS and forwards `/mcp`, `/outbox/stage`, `/oauth/callback`, `/healthz`, `/~/`.
+- Each HTTP bearer is a **tenant**. The env token `PIGEON_MCP_HTTP_BEARER_TOKEN` is seeded as tenant `grokbot` and may start Google consent. Other tenants are minted on the owner dashboard (`/~/`, passkey login) and only see mailboxes you grant. `/oauth/callback` is public by necessity (a browser redirect carries no bearer); it is protected by single-use `state` + PKCE and only a tenant that may connect mailboxes can start a flow.
 - If you put an access gate (e.g. Cloudflare Access) in front of the host, **exempt `/oauth/callback`** or consent dies after the user clicks Allow.
 - In-repo deploy kit for the reference host: [`deploy/DEPLOYING.md`](deploy/DEPLOYING.md).
 
@@ -104,10 +104,11 @@ Non-sensitive settings live in `.env`; secrets in `.keys` (never commit either w
 | `PIGEON_MCP_OUTBOX_ROOT` | `.env` | Send/stage attachment paths (pick per machine; `/tmp/...` fine on personal hosts) |
 | `PIGEON_MCP_DOWNLOAD_ROOT` | `.env` | `get_attachment` writes |
 | `PIGEON_MCP_TOKENS_DIR` | `.env` | OAuth token storage directory |
+| `PIGEON_MCP_ADMIN_DB` | `.env` | Optional SQLite path (default: next to tokens dir, `admin.sqlite`) |
 | `PIGEON_MCP_OAUTH_PUBLIC_REDIRECT_URI` | `.env` | Public HTTPS callback — must match the Web client exactly |
 | `PIGEON_MCP_GOOGLE_WEB_CLIENT_ID` | `.keys` | Google Web OAuth client id |
 | `PIGEON_MCP_GOOGLE_WEB_CLIENT_SECRET` | `.keys` | Google Web OAuth client secret |
-| `PIGEON_MCP_HTTP_BEARER_TOKEN` | `.keys` | Bearer token for HTTP transport |
+| `PIGEON_MCP_HTTP_BEARER_TOKEN` | `.keys` | GrokBot / legacy tenant bearer (hashed into SQLite as `grokbot`) |
 | `PIGEON_MCP_OAUTH_REDIRECT_URI` | `.env` | *Optional, stdio only:* loopback callback for a Desktop client |
 | `PIGEON_MCP_GOOGLE_CLIENT_ID` / `_SECRET` | `.keys` | *Optional, stdio only:* Desktop client for local `accounts_add` |
 
@@ -129,7 +130,9 @@ Same tools as HTTP plus `accounts_add` / `accounts_remove` (local Desktop-client
 pigeon-mcp-http
 ```
 
-Binds `127.0.0.1:8879` by default. Requires `Authorization: Bearer <PIGEON_MCP_HTTP_BEARER_TOKEN>`; requests without a valid token get **401**. The bearer is the whole transport auth — there is no OAuth authorization server for MCP clients, and `/.well-known/oauth-*` 404s are intentional.
+Binds `127.0.0.1:8879` by default. Requires a tenant bearer (`Authorization: Bearer …`); requests without a valid token get **401**. There is no OAuth authorization server for MCP clients, and `/.well-known/oauth-*` 404s are intentional.
+
+**Owner dashboard:** `pigeon-admin bootstrap` prints a one-time URL. Open it, register a passkey, then mint named tenants and grant mailboxes at `https://<host>/~/`. The secret is shown once. Nginx must proxy `/~/`.
 
 **HTTP allow-list:** read/organise tools plus `send`, `reply`, `forward`, `draft_create`, `draft_send`, `identities_list`, `messages_list`, `accounts_list`, `accounts_auth_start`, and `gmail_status`. `accounts_add` / `accounts_remove` stay on stdio.
 

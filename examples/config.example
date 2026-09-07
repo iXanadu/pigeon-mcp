@@ -18,6 +18,8 @@ PIGEON_MCP_DOWNLOAD_ROOT=/tmp/pigeon/Inbox
 
 # OAuth token storage (created on first accounts_add). Must be absolute or ~/… (expanded).
 PIGEON_MCP_TOKENS_DIR=/home/you/.config/pigeon-mcp/tokens
+# Owner passkeys + tenant hashes (default: directory above tokens / admin.sqlite)
+# PIGEON_MCP_ADMIN_DB=/home/you/.config/pigeon-mcp/admin.sqlite
 
 # Optional, stdio only: loopback redirect registered on a Google Desktop OAuth client
 PIGEON_MCP_OAUTH_REDIRECT_URI=http://127.0.0.1:8767/oauth/callback

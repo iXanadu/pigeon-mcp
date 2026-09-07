@@ -1,6 +1,6 @@
 # pigeon-mcp backlog
 
-Last updated: 2026-09-06 (filter tools shipped; awaiting prod deploy)
+Last updated: 2026-09-07 (tenant admin local; not deployed)
 
 Open items only. Host topology and session state live in engram (`startup/next`, `deploy/*`).
 
@@ -12,8 +12,9 @@ Open items only. Host topology and session state live in engram (`startup/next`,
 - [ ] **Prod tokens dir stray file:** a zero-byte root-owned file literally named `*.json` sits in the prod app's `tokens/` (created 2026-08-27 by a quoting slip). The loader skips it; remove with sudo on the host.
 - [ ] **GitHub dangling objects:** a force-push does not purge old commits from GitHub's object store immediately (reachable by SHA for a while). If that matters, ask GitHub Support to run a GC on the repo; otherwise it ages out.
 
-### DEGRADING
-- (none)
+### After tenant deploy (not yet on prod)
+- [ ] **Host nginx:** proxy `location /~/` (and `=/~`) to the app — dashboard 404s until this exists. Then `pigeon-admin bootstrap` on the host, owner registers a passkey, mint cursor/claude/codex/grok, grant `mail@` only.
+- [ ] **Harness attach:** `pigeon-mcp` stdio proxy + `PIGEON_IDENTITY` in each MCP config (after tokens exist). Do not reuse the GrokBot bearer.
 
 ## Parked
 

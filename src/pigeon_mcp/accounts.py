@@ -31,11 +31,19 @@ def _store() -> TokenStore:
     return TokenStore(settings.tokens_dir)
 
 
-async def accounts_list() -> list[dict[str, str]]:
-    """Connected Gmail addresses and whether each refresh token still works."""
+async def accounts_list(*, unrestricted: bool = False) -> list[dict[str, str]]:
+    """Connected Gmail addresses and whether each refresh token still works.
+
+    HTTP tenants only see granted mailboxes unless unrestricted=True (owner dashboard).
+    """
+    from pigeon_mcp.tenants import allowed_accounts
+
+    allowed = None if unrestricted else allowed_accounts()
     store = _store()
     summaries: list[AccountSummary] = []
     for email in store.list_emails():
+        if allowed is not None and email.lower() not in allowed:
+            continue
         token = await ensure_fresh_token(store, email)
         if not token:
             summaries.append(AccountSummary(email, STATUS_NEEDS_AUTH))
@@ -69,11 +77,15 @@ async def accounts_auth_start() -> dict[str, str]:
             "PIGEON_MCP_OAUTH_PUBLIC_REDIRECT_URI is required for Hand-initiated OAuth "
             "(set it to your public https://…/oauth/callback)"
         )
+    from pigeon_mcp.tenants import current_tenant
+
+    tenant = current_tenant()
     client_id, client_secret = web_client_credentials()
     auth_url, state = build_auth_url(
         redirect_uri,
         client_id=client_id,
         client_secret=client_secret,
+        tenant_id=tenant.id if tenant else "",
     )
     return {
         "auth_url": auth_url,
@@ -99,6 +111,10 @@ async def accounts_add_complete(code: str, state: str) -> dict[str, str]:
         client_secret=pending.client_secret,
         code_verifier=pending.code_verifier,
     )
+    if pending.tenant_id:
+        from pigeon_mcp.tenants import get_store
+
+        get_store().grant(pending.tenant_id, token.email)
     return {"account": token.email, "status": token.status}
 
 

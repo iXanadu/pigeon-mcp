@@ -40,6 +40,9 @@ class Settings(BaseSettings):
     # OAuth token storage (populated after accounts.add)
     tokens_dir: Path = Path.home() / ".config" / "pigeon-mcp" / "tokens"
 
+    # Owner passkeys / tenant bearers / audit (SQLite). Empty = tokens_dir/../admin.sqlite
+    admin_db: Path | None = None
+
     # Google OAuth client — Desktop for stdio; optional Web slots for Hand/public callback
     google_client_id: str = ""
     google_client_secret: str = ""
@@ -60,9 +63,11 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    @field_validator("outbox_root", "download_root", "tokens_dir", mode="before")
+    @field_validator("outbox_root", "download_root", "tokens_dir", "admin_db", mode="before")
     @classmethod
-    def _expand_user_path(cls, value: object) -> Path:
+    def _expand_user_path(cls, value: object) -> Path | None:
+        if value is None or value == "":
+            return None
         if isinstance(value, str):
             value = Path(value)
         if not isinstance(value, Path):
@@ -71,6 +76,14 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+
+def admin_db_path(cfg: Settings | None = None) -> Path:
+    """SQLite file for passkeys, tenant hashes, grants, audit — not Gmail refresh tokens."""
+    cfg = cfg or settings
+    if cfg.admin_db is not None:
+        return Path(cfg.admin_db).expanduser()
+    return cfg.tokens_dir.expanduser().parent / "admin.sqlite"
 
 
 def ensure_data_dirs() -> None:

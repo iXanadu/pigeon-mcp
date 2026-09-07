@@ -37,6 +37,7 @@ class PendingAuth:
     redirect_uri: str
     client_id: str
     client_secret: str
+    tenant_id: str = ""
 
 
 _states: dict[str, PendingAuth] = {}
@@ -106,6 +107,7 @@ def build_auth_url(
     *,
     client_id: str | None = None,
     client_secret: str | None = None,
+    tenant_id: str = "",
 ) -> tuple[str, str]:
     """Return (auth_url, state). Caller must complete via take_pending + exchange."""
     cid = client_id or settings.google_client_id
@@ -121,6 +123,7 @@ def build_auth_url(
         redirect_uri=redirect_uri,
         client_id=cid,
         client_secret=secret or "",
+        tenant_id=tenant_id,
     )
     params = {
         "response_type": "code",

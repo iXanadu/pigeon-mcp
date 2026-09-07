@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import sys
 
-from pigeon_mcp.config import ensure_data_dirs, settings
+from pigeon_mcp.config import admin_db_path, ensure_data_dirs, settings
+from pigeon_mcp.tenants import get_store
 
 PASS, WARN, FAIL = "PASS", "WARN", "FAIL"
 
@@ -41,13 +42,27 @@ def run() -> int:
         )
 
     if settings.http_bearer_token:
-        results.append(_line(PASS, "HTTP bearer token configured."))
+        results.append(_line(PASS, "HTTP bearer token configured (seeded as tenant grokbot)."))
     else:
         results.append(
             _line(
                 WARN,
                 "HTTP bearer token not set.",
-                "Add PIGEON_MCP_HTTP_BEARER_TOKEN to .keys for gateway/Hand transport.",
+                "Add PIGEON_MCP_HTTP_BEARER_TOKEN to .keys for GrokBot / gateway transport.",
+            )
+        )
+
+    db = admin_db_path()
+    store = get_store()
+    results.append(_line(PASS, f"Admin SQLite ready: {db}."))
+    if store.has_passkey():
+        results.append(_line(PASS, f"Owner passkey registered ({store.passkey_count()})."))
+    else:
+        results.append(
+            _line(
+                WARN,
+                "No owner passkey yet.",
+                "Run pigeon-admin bootstrap and open the URL to register a passkey.",
             )
         )
 

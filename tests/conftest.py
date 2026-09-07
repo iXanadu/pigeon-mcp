@@ -23,5 +23,11 @@ def _isolate_settings(monkeypatch, tmp_path):
     monkeypatch.setattr(config_mod.settings, "http_bearer_token", "test-token")
     monkeypatch.setattr(config_mod.settings, "outbox_root", tmp_path / "Outbox")
     monkeypatch.setattr(config_mod.settings, "tokens_dir", tmp_path / "tokens")
+    monkeypatch.setattr(config_mod.settings, "admin_db", tmp_path / "admin.sqlite")
     monkeypatch.setattr(config_mod.settings, "google_client_id", "")
     monkeypatch.setattr(config_mod.settings, "google_client_secret", "")
+    from pigeon_mcp.tenants import reset_store_cache
+
+    reset_store_cache()
+    yield
+    reset_store_cache()

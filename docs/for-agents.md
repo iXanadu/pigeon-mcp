@@ -21,8 +21,10 @@ Then, in conversation:
   identities_list      the agent's address should be on it
 ```
 
-The token is transport auth — there is no second OAuth step for the MCP
-itself, and `/.well-known/oauth-*` returning 404 is intentional.
+The token is a **tenant**. It only sees mailboxes the owner granted. There is
+no second OAuth step for the MCP itself, and `/.well-known/oauth-*` returning
+404 is intentional. Coding-agent tenants cannot start Google consent; if a
+mailbox is missing, ask the owner.
 
 ### What the agent needs to know (not the human)
 

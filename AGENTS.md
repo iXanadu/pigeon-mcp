@@ -32,9 +32,10 @@ pigeon-doctor
 ## Conventions
 - Config: `.env` (non-sensitive) + `.keys` (secrets, never commit). Prefix `PIGEON_MCP_`.
 - Python: pyenv + pyenv-virtualenv (not `python -m venv`). Venv name: `pigeon-mcp-3.13`.
-- No database. Tokens are `gmail-token-*.json` under `PIGEON_MCP_TOKENS_DIR` (default `~/.config/pigeon-mcp/tokens`), mode 0640.
+- Gmail tokens are `gmail-token-*.json` under `PIGEON_MCP_TOKENS_DIR` (default `~/.config/pigeon-mcp/tokens`), mode 0640. Owner/tenant state is SQLite (`admin.sqlite` next to that dir) — not Postgres.
 - Attachments only from outbox root (default `~/Outbox`).
-- Public routes: `/mcp`, `/oauth/callback`, `/outbox/stage`, `GET /healthz`
+- Public routes: `/mcp`, `/oauth/callback`, `/outbox/stage`, `GET /healthz`, `/~/` (owner passkey dashboard)
+- Tenants: SQLite `admin.sqlite` (passkeys, hashed bearers, grants, audit). Gmail refresh tokens stay files. Env bearer seeds tenant `grokbot`.
 
 ## Deployment Workflow
 1. Work locally, commit, push

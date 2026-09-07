@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import secrets
 
 from mcp.server.auth.settings import AuthSettings
 from mcp.server.mcpserver import MCPServer
@@ -14,9 +13,11 @@ from pigeon_mcp import accounts as accounts_mod
 from pigeon_mcp import identities as identities_mod
 from pigeon_mcp import inbox as inbox_mod
 from pigeon_mcp import mail as mail_mod
+from pigeon_mcp.admin import mount_admin
 from pigeon_mcp.attachments import MAX_TOTAL_BYTES, stage_outbox_bytes
-from pigeon_mcp.bearer_auth import StaticBearerVerifier
+from pigeon_mcp.bearer_auth import TenantBearerVerifier
 from pigeon_mcp.config import http_public_base_url, settings
+from pigeon_mcp.tenants import gate_http, get_store, set_current_tenant
 
 VERSION = "0.1.0"
 
@@ -78,7 +79,7 @@ def build_mcp(*, http: bool = False) -> MCPServer:
             "pigeon-mcp",
             version=VERSION,
             auth=auth,
-            token_verifier=StaticBearerVerifier(settings.http_bearer_token),
+            token_verifier=TenantBearerVerifier(),
         )
     else:
         mcp = MCPServer("pigeon-mcp", version=VERSION)
@@ -86,17 +87,18 @@ def build_mcp(*, http: bool = False) -> MCPServer:
     if http:
 
         def _bearer_ok(request: Request) -> bool:
-            """custom_route skips MCP auth — enforce the static bearer ourselves."""
-            expected = settings.http_bearer_token
-            if not expected:
-                return False
+            """custom_route skips MCP auth — resolve a tenant bearer ourselves."""
             header = request.headers.get("authorization", "")
             if not header.lower().startswith("bearer "):
                 return False
-            got = header[7:].strip()
-            if len(got) != len(expected):
+            tenant = get_store().resolve_bearer(header[7:].strip())
+            if tenant is None:
                 return False
-            return secrets.compare_digest(got, expected)
+            set_current_tenant(tenant)
+            return True
+
+        get_store()
+        mount_admin(mcp)
 
         @mcp.custom_route("/oauth/callback", methods=["GET"])
         async def oauth_callback(request: Request) -> Response:
@@ -188,6 +190,7 @@ def build_mcp(*, http: bool = False) -> MCPServer:
     @mcp.tool()
     async def gmail_status() -> str:
         """Report server version and configuration (no Gmail API calls)."""
+        gate_http("gmail_status")
         accts = await accounts_mod.accounts_list()
         return (
             f"pigeon-mcp {VERSION}\n"
@@ -201,6 +204,7 @@ def build_mcp(*, http: bool = False) -> MCPServer:
     @mcp.tool()
     async def accounts_list() -> str:
         """List connected Gmail addresses and whether each refresh token still works."""
+        gate_http("accounts_list")
         rows = await accounts_mod.accounts_list()
         return json.dumps(rows, indent=2)
 
@@ -208,12 +212,14 @@ def build_mcp(*, http: bool = False) -> MCPServer:
     async def accounts_auth_start() -> str:
         """Start Google OAuth for a mailbox over HTTP. Returns auth_url for a human to open;
         consent completes via the public /oauth/callback and the account appears in accounts_list."""
+        gate_http("accounts_auth_start")
         result = await accounts_mod.accounts_auth_start()
         return json.dumps(result, indent=2)
 
     @mcp.tool()
     async def identities_list(account: str) -> str:
         """Verified send-as identities for an account. Only these may be used as from_identity."""
+        gate_http("identities_list", account=account)
         return json.dumps(await identities_mod.list_identities(account), indent=2)
 
     if not http:
@@ -248,6 +254,7 @@ def build_mcp(*, http: bool = False) -> MCPServer:
         from_identity: optional verified send-as address (see identities_list). Sets From
         with its display name and Reply-To. Empty = the account address itself.
         """
+        gate_http("send", account=account, from_identity=from_identity)
         result = await mail_mod.send(
             account=account,
             to=to,
@@ -275,6 +282,7 @@ def build_mcp(*, http: bool = False) -> MCPServer:
         from_identity: str = "",
     ) -> str:
         """Reply on a thread. Same attachment and proof rules as send."""
+        gate_http("reply", account=account, from_identity=from_identity)
         result = await mail_mod.reply(
             account=account,
             message_id=message_id,
@@ -302,6 +310,7 @@ def build_mcp(*, http: bool = False) -> MCPServer:
         from_identity: str = "",
     ) -> str:
         """Forward a message on-thread. Same attachment and proof rules as send."""
+        gate_http("forward", account=account, from_identity=from_identity)
         result = await mail_mod.forward(
             account=account,
             message_id=message_id,
@@ -324,6 +333,7 @@ def build_mcp(*, http: bool = False) -> MCPServer:
         page_token: str = "",
     ) -> str:
         """Search Gmail threads using Gmail query syntax."""
+        gate_http("search", account=account)
         return inbox_mod.format_result(
             await inbox_mod.search(account, query, max_results=max_results, page_token=page_token)
         )
@@ -338,6 +348,7 @@ def build_mcp(*, http: bool = False) -> MCPServer:
         """List messages (not threads) with headers only — no bodies. Use for routing
         sweeps: originalTo is the real recipient behind a catch-all; authResults carries
         dkim/dmarc. Fetch bodies afterwards with get_message only where needed."""
+        gate_http("messages_list", account=account)
         return inbox_mod.format_result(
             await inbox_mod.messages_list(
                 account, query, max_results=max_results, page_token=page_token
@@ -348,6 +359,7 @@ def build_mcp(*, http: bool = False) -> MCPServer:
     async def get_thread(account: str, thread_id: str, format: str = "plain") -> str:
         """Get messages on a thread. format=metadata is headers+snippet only (cheap);
         plain adds the text body; full adds HTML and attachment metadata."""
+        gate_http("get_thread", account=account)
         return inbox_mod.format_result(
             await inbox_mod.get_thread_messages(account, thread_id, format=format)
         )
@@ -356,6 +368,7 @@ def build_mcp(*, http: bool = False) -> MCPServer:
     async def get_message(account: str, message_id: str, format: str = "plain") -> str:
         """Get one message. format=metadata is headers+snippet only (cheap); plain adds
         the text body; full adds HTML and attachment metadata."""
+        gate_http("get_message", account=account)
         return inbox_mod.format_result(
             await inbox_mod.get_message_detail(account, message_id, format=format)
         )
@@ -369,6 +382,7 @@ def build_mcp(*, http: bool = False) -> MCPServer:
     ) -> str:
         """Write an attachment under download_root. output_path may be a bare filename
         (lands in download_root) or an absolute path under it. Returns path and size."""
+        gate_http("get_attachment", account=account)
         return inbox_mod.format_result(
             await inbox_mod.get_attachment_file(account, message_id, attachment_id, output_path)
         )
@@ -376,16 +390,19 @@ def build_mcp(*, http: bool = False) -> MCPServer:
     @mcp.tool()
     async def labels_list(account: str) -> str:
         """List system and user labels for an account."""
+        gate_http("labels_list", account=account)
         return inbox_mod.format_result(await inbox_mod.labels_list(account))
 
     @mcp.tool()
     async def labels_create(account: str, name: str) -> str:
         """Create a user label."""
+        gate_http("labels_create", account=account)
         return inbox_mod.format_result(await inbox_mod.labels_create(account, name))
 
     @mcp.tool()
     async def filters_list(account: str) -> str:
         """List the account's Gmail filters (id, criteria, action with label names)."""
+        gate_http("filters_list", account=account)
         return inbox_mod.format_result(await inbox_mod.filters_list(account))
 
     @mcp.tool()
@@ -406,6 +423,7 @@ def build_mcp(*, http: bool = False) -> MCPServer:
         (comma-separated names or ids, must exist — see labels_create), skip_inbox (drop INBOX),
         mark_read (drop UNREAD). Needs gmail.settings.basic on the account token; a 403 means
         re-consent that mailbox."""
+        gate_http("filters_create", account=account)
         return inbox_mod.format_result(
             await inbox_mod.filters_create(
                 account,
@@ -424,31 +442,37 @@ def build_mcp(*, http: bool = False) -> MCPServer:
     @mcp.tool()
     async def filters_delete(account: str, filter_id: str) -> str:
         """Delete a Gmail filter by id (from filters_list)."""
+        gate_http("filters_delete", account=account)
         return inbox_mod.format_result(await inbox_mod.filters_delete(account, filter_id))
 
     @mcp.tool()
     async def label(account: str, thread_id: str, labels: str) -> str:
         """Add labels to a thread (comma-separated names or ids)."""
+        gate_http("label", account=account)
         return inbox_mod.format_result(await inbox_mod.label(account, thread_id, labels))
 
     @mcp.tool()
     async def unlabel(account: str, thread_id: str, labels: str) -> str:
         """Remove labels from a thread (comma-separated names or ids)."""
+        gate_http("unlabel", account=account)
         return inbox_mod.format_result(await inbox_mod.unlabel(account, thread_id, labels))
 
     @mcp.tool()
     async def archive(account: str, thread_id: str) -> str:
         """Remove INBOX from a thread."""
+        gate_http("archive", account=account)
         return inbox_mod.format_result(await inbox_mod.archive(account, thread_id))
 
     @mcp.tool()
     async def trash(account: str, thread_id: str) -> str:
         """Move a thread to trash."""
+        gate_http("trash", account=account)
         return inbox_mod.format_result(await inbox_mod.trash(account, thread_id))
 
     @mcp.tool()
     async def untrash(account: str, thread_id: str) -> str:
         """Restore a thread from trash."""
+        gate_http("untrash", account=account)
         return inbox_mod.format_result(await inbox_mod.untrash(account, thread_id))
 
     @mcp.tool()
@@ -465,6 +489,7 @@ def build_mcp(*, http: bool = False) -> MCPServer:
         from_identity: str = "",
     ) -> str:
         """Create a draft with the same MIME rules as send (from_identity as in send)."""
+        gate_http("draft_create", account=account, from_identity=from_identity)
         return inbox_mod.format_result(
             await inbox_mod.draft_create(
                 account=account,
@@ -483,6 +508,7 @@ def build_mcp(*, http: bool = False) -> MCPServer:
     @mcp.tool()
     async def draft_send(account: str, draft_id: str, idempotency_key: str) -> str:
         """Send a draft with post-send proof."""
+        gate_http("draft_send", account=account)
         return inbox_mod.format_result(
             await inbox_mod.draft_send(account, draft_id, idempotency_key)
         )
