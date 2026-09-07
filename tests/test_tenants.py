@@ -12,7 +12,7 @@ def test_env_bearer_seeds_grokbot_and_grants_disk_accounts(tmp_path):
     tokens = tmp_path / "tokens"
     store = TokenStore(tokens)
     store.save(
-        AccountToken(email="mail@c52.com", refresh_token="rt", status=STATUS_ACTIVE)
+        AccountToken(email="mail@example.com", refresh_token="rt", status=STATUS_ACTIVE)
     )
     from pigeon_mcp.config import settings
 
@@ -22,7 +22,7 @@ def test_env_bearer_seeds_grokbot_and_grants_disk_accounts(tmp_path):
     assert tenant is not None
     assert tenant.name == "grokbot"
     assert tenant.can_auth_start
-    assert tenant.allows("mail@c52.com")
+    assert tenant.allows("mail@example.com")
 
 
 def test_harness_tenant_cannot_see_ungranted_account():
@@ -37,18 +37,18 @@ def test_harness_tenant_cannot_see_ungranted_account():
     except ValueError as exc:
         assert "cannot connect mailboxes" in str(exc)
     try:
-        gate_http("send", account="mail@c52.com")
+        gate_http("send", account="mail@example.com")
         raise AssertionError("expected grant deny")
     except ValueError as exc:
         assert "not granted" in str(exc)
-    db.grant(tenant.id, "mail@c52.com")
+    db.grant(tenant.id, "mail@example.com")
     tenant = db.resolve_bearer(secret)
     set_current_tenant(tenant)
-    gate_http("send", account="mail@c52.com", from_identity="cursor@c52.com")
+    gate_http("send", account="mail@example.com", from_identity="cursor@example.com")
     rows = db.list_audit()
     assert rows[0]["tenant_name"] == "cursor"
     assert rows[0]["tool"] == "send"
-    assert rows[0]["from_identity"] == "cursor@c52.com"
+    assert rows[0]["from_identity"] == "cursor@example.com"
     set_current_tenant(None)
 
 
