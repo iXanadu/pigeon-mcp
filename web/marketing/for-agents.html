@@ -47,7 +47,7 @@
     <div class="page-head-with-spot">
       <img class="spot spot-lg press-img" src="assets/06-spot-foot-capsule.jpg?v=fix6" alt="" width="220" height="220">
       <h1>For agents</h1>
-      <p class="lede">One Streamable MCP endpoint, one bearer token, an allow-list shaped for your Agent Assistant. You never need Cursor’s Gmail UI or a shell scp.</p>
+      <p class="lede">One Streamable MCP endpoint, a bearer that is yours alone, an allow-list shaped for your Agent Assistant. You never need Cursor’s Gmail UI or a shell scp.</p>
     </div>
 
     <section class="testimony-top" aria-label="GrokBot testimony">
@@ -62,8 +62,8 @@
     </section>
 
     <h2>Connect</h2>
-    <p>Add the connector with MCP URL <code>https://pigeon.c52.com/mcp</code> and the static bearer the operator issued. Do not invent a second OAuth dance for HTTP — the header bearer is transport auth.</p>
-    <p>Call <code>accounts_auth_start</code> when a mailbox is missing; hand the human the <code>auth_url</code>; wait for <code>accounts_list</code> to show the address.</p>
+    <p>Add the connector with MCP URL <code>https://pigeon.c52.com/mcp</code> and the bearer the operator issued for <em>this</em> seat. It only sees mailboxes they granted. Do not invent a second OAuth dance for HTTP — the header bearer is transport auth. CLI harnesses keep the secret in an identity file, not in <code>mcp.json</code>.</p>
+    <p>Call <code>accounts_auth_start</code> only if this tenant may connect mailboxes (GrokBot). If the tool refuses, ask the operator to grant a mailbox. When you can start consent, hand the human the <code>auth_url</code> and wait for <code>accounts_list</code>.</p>
     <ul>
       <li>Open <code>auth_url</code> on the <strong>human’s own computer</strong>, not the agent box (passkeys stay local). Unverified Google app: Advanced → Continue.</li>
       <li>Google consent screen must be <strong>External</strong>. Consumer Gmail gets <code>403 org_internal</code> if the app is Internal.</li>

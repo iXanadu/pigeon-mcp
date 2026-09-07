@@ -42,7 +42,7 @@ chmod 600 .keys
 pigeon-doctor
 ```
 
-Fill in `.keys` with the Web client id/secret and a long random `PIGEON_MCP_HTTP_BEARER_TOKEN`. Set `PIGEON_MCP_OAUTH_PUBLIC_REDIRECT_URI` in `.env` to your public callback.
+Fill in `.keys` with the Web client id/secret and a long random `PIGEON_MCP_HTTP_BEARER_TOKEN` (this becomes tenant `grokbot` — the seat that may connect mailboxes). Set `PIGEON_MCP_OAUTH_PUBLIC_REDIRECT_URI` in `.env` to your public callback.
 
 ### Google Cloud Console (one-time)
 
@@ -58,13 +58,18 @@ Fill in `.keys` with the Web client id/secret and a long random `PIGEON_MCP_HTTP
 
 Scopes are fixed in the server: `gmail.modify` + `gmail.send` + `gmail.settings.basic` — read/send/organise mail; `modify` also reads the send-as list (identities, live signature, not cached); `settings.basic` exists only so `filters_create` / `filters_delete` work. **No** username/password, app password, or pasted refresh token in chat.
 
-### Connect a mailbox
+### First run — tenants, not one shared key
 
-The agent calls `accounts_auth_start` over HTTP and gets an `auth_url`. A human opens it **on their own computer** (any browser, anywhere — passkeys stay local), picks the Google account, clicks Allow. Google redirects to the public `/oauth/callback`, the server stores the token, and the address shows up in `accounts_list`. That address is the `account` argument for every other tool.
+After HTTP is up (see **Deployment layout**):
 
-This works on a headless server with no tunnel and no token copying — the callback is a public HTTPS URL, not a loopback. Empty `accounts_list` on a fresh host is success, not a fault.
+1. **GrokBot (or one operator agent)** gets the env bearer and the MCP URL. It calls `accounts_auth_start`; **you** open the Google link on your computer and Allow. The Gmail refresh token stays on the server (`gmail-token-*.json`, mode 0640). Empty `accounts_list` on a fresh host is success.
+2. **You** register a passkey: proxy `/~/` like `/mcp`, run `pigeon-admin bootstrap`, open the one-time URL, then sign in at `https://<your-host>/~/`.
+3. **Mint one tenant per coding harness** on that page. Copy the `pgn_…` once. Grant only the mailboxes that seat may see. Leave “can connect mailboxes” off unless the seat should add Gmail accounts.
+4. **Wire Cursor / Claude / Codex / Grok** like Share: secret in `~/.config/pigeon-mcp/identities/<name>` (0600), harness config only has `PIGEON_IDENTITY`. Install [`scripts/pigeon-mcp-proxy`](scripts/pigeon-mcp-proxy) as `~/.local/bin/pigeon-mcp`.
 
-Tokens land in `PIGEON_MCP_TOKENS_DIR` (default `~/.config/pigeon-mcp/tokens/`) as `gmail-token-<account>.json` (mode 0640). On a production host, point it at a directory your backup sweeps.
+Do not paste `pgn_…` into `mcp.json`. Do not reuse GrokBot’s vault token for a coding session.
+
+Full walk-through (who may connect a mailbox, audit, files on disk): [`docs/tenants.md`](docs/tenants.md).
 
 <details>
 <summary>Optional: local-only stdio with a Desktop client</summary>
@@ -89,7 +94,7 @@ If you run pigeon purely on your own machine over stdio and never expose HTTP, y
 - If you put an access gate (e.g. Cloudflare Access) in front of the host, **exempt `/oauth/callback`** or consent dies after the user clicks Allow.
 - In-repo deploy kit for the reference host: [`deploy/DEPLOYING.md`](deploy/DEPLOYING.md).
 
-After deploy: `pigeon-doctor`, start the service (systemd on Linux, `./scripts/start.sh` LaunchAgent on macOS), then `accounts_list` over HTTP.
+After deploy: `pigeon-doctor`, start the service, `pigeon-admin bootstrap`, then connect mailboxes from the `grokbot` seat. See [`docs/tenants.md`](docs/tenants.md).
 
 ## Configuration
 
@@ -116,13 +121,13 @@ Run `pigeon-doctor` after changing config.
 
 ## Transports
 
-### stdio (local harness)
+### stdio (local process on the pigeon host)
 
 ```bash
 pigeon-mcp
 ```
 
-Same tools as HTTP plus `accounts_add` / `accounts_remove` (local Desktop-client consent). Wire into Cursor / Claude Code MCP config with the venv `pigeon-mcp` binary and `cwd` set to the repo (so `.env` / `.keys` load).
+Same tools as HTTP plus `accounts_add` / `accounts_remove` (local Desktop-client consent). This is the **server** binary in the venv — use it when you are sitting on the pigeon machine. Remote Cursor / Claude / Codex / Grok should use [`scripts/pigeon-mcp-proxy`](scripts/pigeon-mcp-proxy) and a tenant identity file, not this process.
 
 ### Streamable HTTP (gateway)
 
@@ -132,7 +137,7 @@ pigeon-mcp-http
 
 Binds `127.0.0.1:8879` by default. Requires a tenant bearer (`Authorization: Bearer …`); requests without a valid token get **401**. There is no OAuth authorization server for MCP clients, and `/.well-known/oauth-*` 404s are intentional.
 
-**Owner dashboard:** `pigeon-admin bootstrap` prints a one-time URL. Open it, register a passkey, then mint named tenants and grant mailboxes at `https://<host>/~/`. The secret is shown once. Nginx must proxy `/~/`.
+**Owner dashboard:** `pigeon-admin bootstrap` → one-time setup URL → passkey → `https://<host>/~/` to mint and grant. Nginx must proxy `/~/`. Step-by-step: [`docs/tenants.md`](docs/tenants.md).
 
 **HTTP allow-list:** read/organise tools plus `send`, `reply`, `forward`, `draft_create`, `draft_send`, `identities_list`, `messages_list`, `accounts_list`, `accounts_auth_start`, and `gmail_status`. `accounts_add` / `accounts_remove` stay on stdio.
 
@@ -208,6 +213,7 @@ Give each agent its own address on one mailbox (Workspace catch-all + send-as, o
 
 | Doc | For whom | What |
 | --- | --- | --- |
+| [`docs/tenants.md`](docs/tenants.md) | New operator | Passkey admin, one bearer per harness, identity files, who may connect a mailbox |
 | [`docs/for-agents.md`](docs/for-agents.md) | The agent seat (GrokBot, OpenClaw, Hermes, …) | **Connect card**, OAuth gotchas, send-with-file, rules of the road, do-not-attempt, escalation — paste into the seat's context |
 | [`docs/mailroom.md`](docs/mailroom.md) | Operator + agent | One mailbox, many identities: setup, dispatch, trust tiers, labels, DKIM |
 | [`docs/google-oauth-setup.md`](docs/google-oauth-setup.md) | Operator | Consent screen, scopes, Testing trap, unverified-app warning |

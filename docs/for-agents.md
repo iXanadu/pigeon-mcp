@@ -7,9 +7,13 @@ repo.
 
 ## Connect card
 
-Point the agent at the MCP URL. When it asks for the bearer token, give it —
-the agent keeps it in its own vault, uses it on every call, and never shows it.
-Agents differ in how they ask; let yours lead.
+The token is a **tenant**. It only sees mailboxes the owner granted. There is
+no second OAuth step for the MCP itself, and `/.well-known/oauth-*` returning
+404 is intentional.
+
+**GrokBot / a seat that may connect mailboxes.** Point it at the MCP URL. When
+it asks for the bearer, give it — the bot keeps it in its own vault and never
+shows it.
 
 ```
 MCP URL:   https://<your-host>/mcp
@@ -21,10 +25,12 @@ Then, in conversation:
   identities_list      the agent's address should be on it
 ```
 
-The token is a **tenant**. It only sees mailboxes the owner granted. There is
-no second OAuth step for the MCP itself, and `/.well-known/oauth-*` returning
-404 is intentional. Coding-agent tenants cannot start Google consent; if a
-mailbox is missing, ask the owner.
+**Cursor / Claude Code / Codex / Grok CLI.** The operator mints a named tenant
+and writes `~/.config/pigeon-mcp/identities/<harness>` (0600). The harness
+config carries `PIGEON_IDENTITY` only and runs `pigeon-mcp` (the stdio proxy).
+Do not put `pgn_…` in `mcp.json`. These seats **cannot** start Google consent;
+if `accounts_list` is empty, ask the owner to grant a mailbox (or to run
+`accounts_auth_start` from GrokBot).
 
 ### What the agent needs to know (not the human)
 
@@ -33,13 +39,13 @@ mailbox is missing, ask the owner.
 - `send` / `reply` / `forward` / `draft_send` need a unique `idempotency_key`.
 - Attachments: stage the file at `POST /outbox/stage?filename=…` (same bearer),
   then `attachments_json='[{"path": "<path from stage>"}]'`.
-- CLI harnesses (Claude Code, Cursor) that cannot prompt for a secret take the
-  bearer as an `Authorization: Bearer …` header in their MCP config instead.
 
 ## Connecting a mailbox
 
-Call `accounts_auth_start` when a mailbox is missing; hand the human the
-`auth_url`; wait for `accounts_list` to show the address.
+If this tenant is allowed to connect mailboxes, call `accounts_auth_start` when
+a mailbox is missing; hand the human the `auth_url`; wait for `accounts_list`
+to show the address. If the tool refuses, this seat cannot add mailboxes —
+surface that; do not invent a second OAuth flow.
 
 - Open `auth_url` on the **human's own computer**, not the agent box —
   passkeys stay local. Unverified Google app: *Advanced → Continue*.

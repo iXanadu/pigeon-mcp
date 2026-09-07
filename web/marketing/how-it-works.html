@@ -58,8 +58,8 @@
       </li>
       <li>
         <span class="step-num">2</span>
-        <h3>The agent connects a mailbox</h3>
-        <p>The agent calls <code>accounts_auth_start</code>, you open the returned URL, Allow the account. Tokens land on the server as <code>gmail-token-*.json</code>.</p>
+        <h3>You allow a mailbox</h3>
+        <p>A seat that may connect mailboxes (typically GrokBot) calls <code>accounts_auth_start</code>. You open the URL on your own computer and Allow. Refresh tokens land on the server as <code>gmail-token-*.json</code>. Each other agent gets its own bearer from <code>/~/</code> and only sees mailboxes you grant.</p>
       </li>
       <li>
         <span class="step-num">3</span>
@@ -91,6 +91,10 @@
         <tr>
           <th scope="row"><code>/healthz</code></th>
           <td>Unauthenticated liveness on the app bind (deploy verifies); gateway should proxy it publicly</td>
+        </tr>
+        <tr>
+          <th scope="row"><code>/~/</code></th>
+          <td>Owner passkey dashboard — mint a bearer per agent, grant mailboxes</td>
         </tr>
         <tr>
           <th scope="row"><code>/privacy</code> · <code>/terms</code></th>

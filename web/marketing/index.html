@@ -109,7 +109,7 @@
     </dl>
 
     <h2>Built for your agent</h2>
-    <p>pigeon is aimed at agent seats — GrokBot, OpenClaw, Hermes, and similar. The HTTP transport speaks Streamable MCP behind a bearer token. Consent for a mailbox can start from the agent and finish in your browser via a public HTTPS callback — no Desktop loopback required for that path.</p>
+    <p>pigeon is aimed at agent seats — GrokBot, OpenClaw, Hermes, and similar. The HTTP transport speaks Streamable MCP behind a per-seat bearer: each agent sees only the mailboxes you grant. Consent for a mailbox starts from a seat that is allowed to connect accounts and finishes in your browser via a public HTTPS callback — no Desktop loopback required for that path. You mint the other seats at <code>/~/</code>.</p>
 
     <h2>What it is instead of</h2>
     <div class="cols">

@@ -68,7 +68,7 @@
     <p class="m s">Step by step for both Workspace and consumer Gmail: <a href="https://github.com/iXanadu/pigeon-mcp/blob/main/docs/mailroom.md">docs/mailroom.md</a>.</p>
 
     <h2>The connect card</h2>
-    <p>Point GrokBot at the MCP URL. When it asks for the bearer token, give it — the bot stores it in its own vault, uses it on every call, and never shows it. That is the whole handshake; agents differ in how they ask, so let yours lead.</p>
+    <p>Point GrokBot at the MCP URL. When it asks for the bearer token, give it — the bot stores it in its own vault, uses it on every call, and never shows it. That token is this seat only; it sees the mailboxes you granted. Coding agents get their own tokens from <code>/~/</code>. Agents differ in how they ask, so let yours lead.</p>
     <pre><code>MCP URL:   https://&lt;your-host&gt;/mcp
 Token:     give it to the bot when it asks
 

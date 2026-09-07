@@ -52,6 +52,7 @@ pigeon-doctor
 ## Reference Docs
 - `README.md` — install, quick OAuth checklist
 - `docs/google-oauth-setup.md` — scopes, consent screen, Testing trap, legal URLs
+- `docs/tenants.md` — passkey admin, one bearer per harness, identity files
 - `docs/for-agents.md` — connect card + rules for the agent seat (repo source of truth for the site's For agents / GrokBot pages)
 - `docs/mailroom.md` — send-as identities, `originalTo` dispatch, trust tiers, labels, blocked ops
 - `docs/your-server.md` — $5 VPS on-ramp (repo source of truth for the site's Your own server page)
