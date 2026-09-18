@@ -108,6 +108,7 @@ Non-sensitive settings live in `.env`; secrets in `.keys` (never commit either w
 | `PIGEON_MCP_HTTP_PORT` | `.env` | HTTP port (default `8879`) |
 | `PIGEON_MCP_OUTBOX_ROOT` | `.env` | Send/stage attachment paths (pick per machine; `/tmp/...` fine on personal hosts) |
 | `PIGEON_MCP_DOWNLOAD_ROOT` | `.env` | `get_attachment` writes |
+| `PIGEON_MCP_FILE_TTL_HOURS` | `.env` | HTTP server deletes outbox + download files older than this, hourly (default `24`, matches the privacy policy; `0` = off) |
 | `PIGEON_MCP_TOKENS_DIR` | `.env` | OAuth token storage directory |
 | `PIGEON_MCP_ADMIN_DB` | `.env` | Optional SQLite path (default: next to tokens dir, `admin.sqlite`) |
 | `PIGEON_MCP_OAUTH_PUBLIC_REDIRECT_URI` | `.env` | Public HTTPS callback — must match the Web client exactly |

@@ -112,7 +112,7 @@
     <p class="m s">Setup steps for Workspace and consumer Gmail, the label scheme, and the list of things an agent cannot do by design: <a href="https://github.com/iXanadu/pigeon-mcp/blob/main/docs/mailroom.md">docs/mailroom.md</a>.</p>
 
     <h2>Where files live</h2>
-    <p>Outbox and download roots are configurable. On a personal host, <code>/tmp/…</code> with <code>0700</code> self-heal on start is fine for transient staging. Tokens stay next to the service (or under a swept prod tree) — never in the agent transcript. Over HTTP each seat’s downloads land in its own folder, so one agent cannot fetch another’s files.</p>
+    <p>Outbox and download roots are configurable. On a personal host, <code>/tmp/…</code> with <code>0700</code> self-heal on start is fine for transient staging. Tokens stay next to the service (or under a swept prod tree) — never in the agent transcript. Over HTTP each seat’s downloads land in its own folder, so one agent cannot fetch another’s files. Staged and downloaded files are deleted after 24 hours (<code>PIGEON_MCP_FILE_TTL_HOURS</code>).</p>
 
     <div class="row">
       <a class="b" href="for-agents.html">For agents</a>

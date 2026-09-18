@@ -37,6 +37,10 @@ class Settings(BaseSettings):
     # Download root — get_attachment may only write under this tree
     download_root: Path = Path.home() / "Inbox"
 
+    # HTTP server deletes files in outbox_root and download_root older than this.
+    # The privacy policy promises 24 hours; 0 turns the sweep off (self-host choice).
+    file_ttl_hours: int = 24
+
     # OAuth token storage (populated after accounts.add)
     tokens_dir: Path = Path.home() / ".config" / "pigeon-mcp" / "tokens"
 

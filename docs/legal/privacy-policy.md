@@ -20,7 +20,9 @@ those functions.
 
 The application stores OAuth refresh tokens so it can act without repeated
 sign-in, and a small record of recently sent messages used to avoid sending
-duplicates. Message content is not retained after a request is served.
+duplicates. Attachments an agent explicitly downloads, and files staged to send,
+are written to the operator's server and deleted automatically within 24 hours.
+Other message content is not retained after a request is served.
 
 ## How data is handled
 

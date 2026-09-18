@@ -43,6 +43,7 @@ if `accounts_list` is empty, ask the owner to grant a mailbox (or to run
   returns a `download_url`. `GET` it once with the same bearer within 15
   minutes. It is single-use and works only for the seat that pulled it; call
   `get_attachment` again for a fresh link. Check the bytes against `sha256`.
+  Server copies (pulled and staged) are deleted after 24 hours — keep your own.
 
 ## Connecting a mailbox
 

@@ -108,7 +108,7 @@ Keep the surface small. Cursor shipped thirty-one tools and still could not send
 | `search` | Gmail query language. Threads. Pagination. |
 | `get_thread` | Messages on a thread. Default plain text. `format=full` when we need HTML or hrefs. |
 | `get_message` | One message |
-| `get_attachment` | Write the file to a host path. Return path and byte size. Do not dump megabytes of base64 into the model. Over HTTP, write into the calling seat's own folder and also return `sha256` + a single-use `download_url` (`GET /inbox/fetch/<ticket>`: same bearer, 15 min, only the pulling seat; wrong seat / reuse / revoked grant / changed file → 404). |
+| `get_attachment` | Write the file to a host path. Return path and byte size. Do not dump megabytes of base64 into the model. Over HTTP, write into the calling seat's own folder and also return `sha256` + a single-use `download_url` (`GET /inbox/fetch/<ticket>`: same bearer, 15 min, only the pulling seat; wrong seat / reuse / revoked grant / changed file → 404). The HTTP server deletes outbox and download files older than 24 h (privacy policy). |
 | `send` | New mail. Paths for files. Proof on the way out. |
 | `reply` | Same as send, on a thread. Attachments allowed. |
 | `forward` | Same. Attachments allowed. |

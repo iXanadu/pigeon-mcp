@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import os
 import re
+import time
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
@@ -139,3 +141,37 @@ def resolve_attachments(outbox_root: Path, items: list[dict] | None) -> list[Res
             )
         )
     return resolved
+
+
+def sweep_old_files(root: Path, max_age_seconds: float, *, protect: tuple[Path, ...] = ()) -> int:
+    """Delete files under root older than max_age_seconds; drop emptied subfolders.
+
+    Never follows symlinks (a link is removed, not its target). Refuses outright if
+    root is, or contains, a protected path — a misconfigured root must not reach
+    the tokens dir or the admin database.
+    """
+    root = root.expanduser()
+    if not root.is_dir():
+        return 0
+    real = root.resolve()
+    for p in protect:
+        p = p.expanduser().resolve()
+        if p == real or real in p.parents:
+            raise ValueError(f"refusing to sweep {real}: it contains {p}")
+    cutoff = time.time() - max_age_seconds
+    removed = 0
+    for dirpath, dirnames, filenames in os.walk(real, topdown=False, followlinks=False):
+        for name in filenames + [d for d in dirnames if os.path.islink(os.path.join(dirpath, d))]:
+            path = os.path.join(dirpath, name)
+            try:
+                if os.lstat(path).st_mtime < cutoff:
+                    os.unlink(path)
+                    removed += 1
+            except FileNotFoundError:
+                pass
+        if dirpath != str(real):
+            try:
+                os.rmdir(dirpath)  # only succeeds when empty
+            except OSError:
+                pass
+    return removed

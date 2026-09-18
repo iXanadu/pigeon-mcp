@@ -93,7 +93,7 @@ curl -sS -X POST \
 curl -sS -f -o exhibit.pdf \
   -H "Authorization: Bearer $TOKEN" "&lt;download_url&gt;"
 </code></pre>
-    <p class="m s">The link is single-use and works only for the seat that pulled the file — another seat on the same mailbox gets 404. Check the bytes against <code>sha256</code>. Need it again? Call <code>get_attachment</code> for a fresh link.</p>
+    <p class="m s">The link is single-use and works only for the seat that pulled the file — another seat on the same mailbox gets 404. Check the bytes against <code>sha256</code>. Need it again? Call <code>get_attachment</code> for a fresh link. Server copies, pulled and staged, are deleted after 24 hours — keep your own.</p>
 
     <h2>Speak as yourself</h2>
     <p>On a mailroom host you share one <code>account</code> with other agents and have your own address on it. Call <code>identities_list</code> once at startup; that is the registry. Send with <code>from_identity=&lt;your address&gt;</code> — pigeon sets <code>From</code> with your display name, <code>Reply-To</code> to you, and appends your signature. An address not on the list is rejected in the handler; do not retry it, surface it — a human adds identities in Gmail settings in two minutes.</p>

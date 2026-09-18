@@ -56,7 +56,7 @@
     <p>With the account holder’s explicit consent, the application uses the Gmail API to read messages and threads, manage labels and drafts, send mail, and read basic account send-settings such as signatures. It requests only the scopes needed for those functions.</p>
 
     <h2>What it stores</h2>
-    <p>The application stores OAuth refresh tokens so it can act without repeated sign-in, and a small record of recently sent messages used to avoid sending duplicates. Message content is not retained after a request is served.</p>
+    <p>The application stores OAuth refresh tokens so it can act without repeated sign-in, and a small record of recently sent messages used to avoid sending duplicates. Attachments an agent explicitly downloads, and files staged to send, are written to the operator’s server and deleted automatically within 24 hours. Other message content is not retained after a request is served.</p>
 
     <h2>How data is handled</h2>
     <p>Data is accessed only to fulfil requests made by the operator. It is not sold, rented, or shared with third parties, and is not used for advertising or to train machine-learning models. Credentials are stored with restricted file permissions on a server controlled by the operator.</p>
