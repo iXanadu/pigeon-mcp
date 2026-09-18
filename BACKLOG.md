@@ -1,6 +1,6 @@
 # pigeon-mcp backlog
 
-Last updated: 2026-09-17 (inbound attachment download route)
+Last updated: 2026-09-18 (download route + 24 h sweep shipped)
 
 Open items only. Host topology and session state live in engram (`startup/next`, `deploy/*`).
 
@@ -11,6 +11,9 @@ Open items only. Host topology and session state live in engram (`startup/next`,
 - [ ] **Cloudflare:** `gmcp.c52.com` still resolved to Cloudflare edge IPs at 22:50Z 2026-08-29 — confirm the DNS record is actually deleted (nothing serves it any more: vhost disabled, cert deleted, static dir archived under `/etc/nginx/backups/gmcp-retire-final/`).
 - [ ] **Prod tokens dir stray file:** a zero-byte root-owned file literally named `*.json` sits in the prod app's `tokens/` (created 2026-08-27 by a quoting slip). The loader skips it; remove with sudo on the host.
 - [ ] **GitHub dangling objects:** a force-push does not purge old commits from GitHub's object store immediately (reachable by SHA for a while). If that matters, ask GitHub Support to run a GC on the repo; otherwise it ages out.
+
+### DEGRADING
+- [ ] **PX-1 stdio proxy dies on server restart:** after any prod restart, `scripts/pigeon-mcp-proxy` keeps the old `mcp-session-id` and every tool call returns `404 Session not found` until the harness restarts. Fix: on 404, re-`initialize` and retry once. Seen 2026-09-17 after the `5b24d40` deploy.
 
 ## Parked
 
