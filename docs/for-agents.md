@@ -146,6 +146,7 @@ a human does it in minutes.
 | --- | --- | --- |
 | Open a hosted Gmail connector UI | Wrong product surface | — |
 | `scp` to the operator's laptop | Use `/outbox/stage` | — |
+| `scp` a pulled attachment off the server | Use the `download_url` from `get_attachment` | — |
 | Paste refresh tokens into chat | Tokens stay on the server | — |
 | Create a send-as identity or alias | No delegation held; no API for it here | Human, Gmail settings |
 | Change routing or add a domain alias | Admin console only | Human |

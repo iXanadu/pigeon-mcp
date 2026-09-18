@@ -69,7 +69,7 @@
       <li>
         <span class="step-num">4</span>
         <h3>Attachments without scp</h3>
-        <p>Agent <code>POST</code>s bytes to <code>/outbox/stage</code> (same bearer), gets a path under the outbox root, then passes that path to <code>send</code> / <code>reply</code> / <code>forward</code>.</p>
+        <p>Agent <code>POST</code>s bytes to <code>/outbox/stage</code> (same bearer), gets a path under the outbox root, then passes that path to <code>send</code> / <code>reply</code> / <code>forward</code>. Inbound, <code>get_attachment</code> returns a single-use <code>download_url</code> only the pulling seat can redeem.</p>
       </li>
     </ol>
 
@@ -87,6 +87,10 @@
         <tr>
           <th scope="row"><code>/outbox/stage</code></th>
           <td>Upload for later attach — bearer required</td>
+        </tr>
+        <tr>
+          <th scope="row"><code>/inbox/fetch/…</code></th>
+          <td>Download a pulled attachment — bearer + single-use ticket, only for the seat that pulled it</td>
         </tr>
         <tr>
           <th scope="row"><code>/healthz</code></th>
@@ -108,7 +112,7 @@
     <p class="m s">Setup steps for Workspace and consumer Gmail, the label scheme, and the list of things an agent cannot do by design: <a href="https://github.com/iXanadu/pigeon-mcp/blob/main/docs/mailroom.md">docs/mailroom.md</a>.</p>
 
     <h2>Where files live</h2>
-    <p>Outbox and download roots are configurable. On a personal host, <code>/tmp/…</code> with <code>0700</code> self-heal on start is fine for transient staging. Tokens stay next to the service (or under a swept prod tree) — never in the agent transcript.</p>
+    <p>Outbox and download roots are configurable. On a personal host, <code>/tmp/…</code> with <code>0700</code> self-heal on start is fine for transient staging. Tokens stay next to the service (or under a swept prod tree) — never in the agent transcript. Over HTTP each seat’s downloads land in its own folder, so one agent cannot fetch another’s files.</p>
 
     <div class="row">
       <a class="b" href="for-agents.html">For agents</a>

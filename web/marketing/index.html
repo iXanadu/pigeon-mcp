@@ -91,7 +91,7 @@
     </a>
 
     <h2>What it does</h2>
-    <p>Connect one or more Gmail accounts. Your agent searches threads, reads messages, labels and archives, drafts and sends real MIME — including file attachments staged onto the server — with a live Gmail signature appended at send time.</p>
+    <p>Connect one or more Gmail accounts. Your agent searches threads, reads messages, labels and archives, drafts and sends real MIME — including file attachments staged onto the server and pulled back off it — with a live Gmail signature appended at send time.</p>
     <p>One mailbox can carry <strong>many agents</strong>. Each gets its own address as a verified Gmail send-as identity; pigeon routes inbound on the address the sender actually used and lets an agent send as itself — <code>From</code>, <code>Reply-To</code>, its own signature — validated in the tool, not in a prompt.</p>
     <p class="m s">Shipped surface is <strong>Gmail only</strong>. Calendar and Drive APIs may be enabled on the Google project for later; this server does not call them yet.</p>
 
@@ -106,6 +106,8 @@
       <dd>Server-built RFC822. Attachments are paths under an outbox root — never inline content from the chat.</dd>
       <dt>outbox/stage</dt>
       <dd>Authenticated HTTP upload so a remote agent can drop a file, then attach it, with no scp.</dd>
+      <dt>inbox/fetch</dt>
+      <dd>The way back: <code>get_attachment</code> returns a one-time link that only the seat that pulled the file can open.</dd>
     </dl>
 
     <h2>Built for your agent</h2>
@@ -123,7 +125,7 @@
       </div>
       <div>
         <h3>scp for every attachment</h3>
-        <p><code>POST /outbox/stage</code> then <code>send</code> with the returned path.</p>
+        <p><code>POST /outbox/stage</code> then <code>send</code> with the returned path. Inbound: fetch the <code>download_url</code>.</p>
       </div>
     </div>
 
