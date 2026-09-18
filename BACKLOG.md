@@ -12,9 +12,6 @@ Open items only. Host topology and session state live in engram (`startup/next`,
 - [ ] **Prod tokens dir stray file:** a zero-byte root-owned file literally named `*.json` sits in the prod app's `tokens/` (created 2026-08-27 by a quoting slip). The loader skips it; remove with sudo on the host.
 - [ ] **GitHub dangling objects:** a force-push does not purge old commits from GitHub's object store immediately (reachable by SHA for a while). If that matters, ask GitHub Support to run a GC on the repo; otherwise it ages out.
 
-### DEPLOY-PENDING
-- [ ] **DL-1 `/inbox/fetch/` ship:** bearer + single-use ticket download route is committed, not deployed. Host needs an nginx `location /inbox/fetch/` proxied to the app (see `deploy/DEPLOYING.md`), then `./deploy/deploy.sh`. GrokBot is waiting to re-pull.
-
 ### DEGRADING
 - [ ] **DL-2 download folder growth:** pulled attachments stay in `download_root/<tenant-id>/` forever after the ticket is spent. Add a TTL sweep (e.g. delete files older than 24h) — disk only, no exposure (served only by ticket).
 
@@ -25,6 +22,7 @@ Open items only. Host topology and session state live in engram (`startup/next`,
 
 ## Done recently (do not re-open)
 
+- **Inbound attachment download (2026-09-17, deployed `5b24d40`):** `GET /inbox/fetch/<ticket>` — bearer + tenant-bound single-use 15-min ticket, per-tenant download folder, grant re-check, sha256/no-symlink guard, audited. nginx `location ^~ /inbox/fetch/` added (backup `pigeon_c52_prod.bak.20260917210028`). Prod e2e: 401 no bearer, 200 + sha match, 404 on reuse.
 - **History purge (2026-08-29, owner go):** `git filter-repo` replace-text + replace-message over all refs (fleet hostnames, sibling product names, personal name, tailnet label → generic); force-pushed `main` `d58dc96 → fcffdc8`; deleted stale branches `content/your-server-page`, `ops/deploy-kit`; fresh-clone verify = 0 hits; prod re-pointed, reflog expired, gc'd. Pre-purge mirror kept locally outside the repo.
 - **`gmcp.c52.com` host retire (2026-08-29):** vhost disabled, LE cert deleted, static dir archived + removed. DNS is the owner's.
 - **Backlog sweep (2026-08-29):** public `/healthz` wired (nginx → app, verified 200 via CF); `ExecStartPost` chmod confirmed already absent from the unit; README rewritten Web-first (Desktop = footnote), examples/spec aligned; hygiene gate fully green; inbound attachment smoke (1 MB + 20 MB zip self-send → `get_attachment` SHA-256 match) — which found and fixed `a2ce65e`: relative `output_path` resolved against CWD instead of `download_root`
