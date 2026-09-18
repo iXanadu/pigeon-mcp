@@ -1,6 +1,6 @@
 # pigeon-mcp backlog
 
-Last updated: 2026-09-07 (tenants live; docs catch-up)
+Last updated: 2026-09-17 (inbound attachment download route)
 
 Open items only. Host topology and session state live in engram (`startup/next`, `deploy/*`).
 
@@ -11,6 +11,12 @@ Open items only. Host topology and session state live in engram (`startup/next`,
 - [ ] **Cloudflare:** `gmcp.c52.com` still resolved to Cloudflare edge IPs at 22:50Z 2026-08-29 — confirm the DNS record is actually deleted (nothing serves it any more: vhost disabled, cert deleted, static dir archived under `/etc/nginx/backups/gmcp-retire-final/`).
 - [ ] **Prod tokens dir stray file:** a zero-byte root-owned file literally named `*.json` sits in the prod app's `tokens/` (created 2026-08-27 by a quoting slip). The loader skips it; remove with sudo on the host.
 - [ ] **GitHub dangling objects:** a force-push does not purge old commits from GitHub's object store immediately (reachable by SHA for a while). If that matters, ask GitHub Support to run a GC on the repo; otherwise it ages out.
+
+### DEPLOY-PENDING
+- [ ] **DL-1 `/inbox/fetch/` ship:** bearer + single-use ticket download route is committed, not deployed. Host needs an nginx `location /inbox/fetch/` proxied to the app (see `deploy/DEPLOYING.md`), then `./deploy/deploy.sh`. GrokBot is waiting to re-pull.
+
+### DEGRADING
+- [ ] **DL-2 download folder growth:** pulled attachments stay in `download_root/<tenant-id>/` forever after the ticket is spent. Add a TTL sweep (e.g. delete files older than 24h) — disk only, no exposure (served only by ticket).
 
 ## Parked
 

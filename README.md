@@ -89,7 +89,7 @@ If you run pigeon purely on your own machine over stdio and never expose HTTP, y
                                         agent seat (bearer)
 ```
 
-- `pigeon-mcp-http` binds **loopback** (`127.0.0.1:8879`); the proxy terminates TLS and forwards `/mcp`, `/outbox/stage`, `/oauth/callback`, `/healthz`, `/~/`.
+- `pigeon-mcp-http` binds **loopback** (`127.0.0.1:8879`); the proxy terminates TLS and forwards `/mcp`, `/outbox/stage`, `/inbox/fetch/`, `/oauth/callback`, `/healthz`, `/~/`.
 - Each HTTP bearer is a **tenant**. The env token `PIGEON_MCP_HTTP_BEARER_TOKEN` is seeded as tenant `grokbot` and may start Google consent. Other tenants are minted on the owner dashboard (`/~/`, passkey login) and only see mailboxes you grant. `/oauth/callback` is public by necessity (a browser redirect carries no bearer); it is protected by single-use `state` + PKCE and only a tenant that may connect mailboxes can start a flow.
 - If you put an access gate (e.g. Cloudflare Access) in front of the host, **exempt `/oauth/callback`** or consent dies after the user clicks Allow.
 - In-repo deploy kit for the reference host: [`deploy/DEPLOYING.md`](deploy/DEPLOYING.md).
@@ -152,6 +152,8 @@ curl -sS -X POST "https://pigeon.c52.com/outbox/stage?filename=deed.pdf" \
 
 Then call `send` / `reply` / `forward` with `attachments_json` using that `path`. Proxy must expose `/outbox/stage` (same bearer as `/mcp`). Cap: 25 MB.
 
+**Fetch inbound attachments:** over HTTP, `get_attachment` returns a `download_url` (`/inbox/fetch/<ticket>`). `GET` it with the same bearer; it is single-use, expires in 15 minutes, and only the seat that pulled the file can redeem it. Proxy must expose `/inbox/fetch/`.
+
 #### macOS service (user LaunchAgent)
 
 ```bash
@@ -177,7 +179,7 @@ On Linux, run `pigeon-mcp-http` under systemd with the same loopback bind — se
 | `search` | Gmail query; returns threads |
 | `messages_list` | Gmail query; returns messages with headers + snippet, no bodies (routing sweeps) |
 | `get_thread` / `get_message` | `format=metadata` (headers only), `plain` or `full`; every message carries `originalTo`, `deliveredTo`, `replyTo`, `authResults` |
-| `get_attachment` | Writes under download root |
+| `get_attachment` | Writes under download root; over HTTP, into the seat's own folder plus a single-use `download_url` (bearer, 15 min) |
 | `send` / `reply` / `forward` | Paths only; rejects `content` / base64 in JSON; optional `from_identity` |
 | `draft_create` / `draft_send` | Same attach/proof rules as send; `draft_create` takes `from_identity` |
 | `labels_list` / `labels_create` | User + system labels |

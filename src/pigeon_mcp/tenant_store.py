@@ -17,6 +17,8 @@ _GROKBOT = "grokbot"
 _SETUP_TTL = timedelta(minutes=30)
 _SESSION_TTL = timedelta(days=30)
 _CHALLENGE_TTL = timedelta(minutes=5)
+DOWNLOAD_TTL = timedelta(minutes=15)
+DOWNLOAD_PREFIX = "pgd_"
 
 
 def sha256_secret(value: str) -> bytes:
@@ -130,6 +132,16 @@ class TenantStore:
                 payload TEXT NOT NULL,
                 expires_at TEXT NOT NULL
             );
+            CREATE TABLE IF NOT EXISTS download_ticket (
+                token_hash BLOB PRIMARY KEY,
+                tenant_id TEXT NOT NULL REFERENCES tenant(id),
+                account TEXT NOT NULL,
+                path TEXT NOT NULL,
+                sha256 TEXT NOT NULL,
+                size INTEGER NOT NULL,
+                created_at TEXT NOT NULL,
+                expires_at TEXT NOT NULL
+            );
             CREATE INDEX IF NOT EXISTS audit_event_at ON audit_event(at DESC);
             """
         )
@@ -200,10 +212,12 @@ class TenantStore:
     ) -> str:
         if not secret:
             raise ValueError("empty bearer")
-        existing = self._fetchone("SELECT id FROM tenant WHERE name = ?", (name,))
+        existing = self._fetchone("SELECT id, token_hash FROM tenant WHERE name = ?", (name,))
         digest = sha256_secret(secret)
         prefix = secret[:12]
         if existing:
+            if existing["token_hash"] != digest:
+                self.drop_downloads(existing["id"])
             self._exec(
                 """
                 UPDATE tenant SET token_hash = ?, display_prefix = ?,
@@ -319,6 +333,7 @@ class TenantStore:
             "UPDATE tenant SET revoked_at = ? WHERE id = ?",
             (_now(), tenant_id),
         )
+        self.drop_downloads(tenant_id)
 
     def set_can_auth_start(self, tenant_id: str, value: bool) -> None:
         self._exec(
@@ -332,7 +347,12 @@ class TenantStore:
             "UPDATE tenant SET token_hash = ?, display_prefix = ? WHERE id = ?",
             (sha256_secret(secret), secret[:12], tenant_id),
         )
+        self.drop_downloads(tenant_id)
         return secret
+
+    def drop_downloads(self, tenant_id: str) -> None:
+        """Rotation or revoke means the old bearer may be loose — its tickets die too."""
+        self._exec("DELETE FROM download_ticket WHERE tenant_id = ?", (tenant_id,))
 
     def put_challenge(self, challenge: str, payload: dict) -> None:
         self._gc_challenges()
@@ -351,6 +371,44 @@ class TenantStore:
             return None
         self._exec("DELETE FROM webauthn_challenge WHERE challenge = ?", (challenge,))
         return json.loads(row["payload"])
+
+    def issue_download(
+        self, *, tenant_id: str, account: str, path: str, sha256: str, size: int
+    ) -> tuple[str, str]:
+        """One-shot ticket for GET /inbox/fetch. Only the hash is stored."""
+        self._exec("DELETE FROM download_ticket WHERE expires_at < ?", (_now(),))
+        secret = DOWNLOAD_PREFIX + secrets.token_urlsafe(32)
+        expires = _iso(datetime.now(timezone.utc) + DOWNLOAD_TTL)
+        self._exec(
+            """
+            INSERT INTO download_ticket
+                (token_hash, tenant_id, account, path, sha256, size, created_at, expires_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (sha256_secret(secret), tenant_id, account.lower(), path, sha256, size, _now(), expires),
+        )
+        return secret, expires
+
+    def consume_download(self, secret: str, tenant_id: str) -> dict | None:
+        """Burn a ticket and return it — only for the tenant it was issued to.
+
+        A ticket presented by the wrong tenant is left alone (no oracle, no DoS on the
+        rightful holder). Expired tickets are deleted, never returned.
+        """
+        if not secret.startswith(DOWNLOAD_PREFIX):
+            return None
+        digest = sha256_secret(secret)
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT * FROM download_ticket WHERE token_hash = ?", (digest,)
+            ).fetchone()
+            if not row or row["tenant_id"] != tenant_id:
+                return None
+            self._conn.execute("DELETE FROM download_ticket WHERE token_hash = ?", (digest,))
+            self._conn.commit()
+        if row["expires_at"] < _now():
+            return None
+        return dict(row)
 
     def _gc_challenges(self) -> None:
         self._exec(

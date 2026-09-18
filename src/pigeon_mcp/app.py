@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
+import os
+from pathlib import Path
+from urllib.parse import quote
 
 from mcp.server.auth.settings import AuthSettings
 from mcp.server.mcpserver import MCPServer
@@ -17,7 +21,7 @@ from pigeon_mcp.admin import mount_admin
 from pigeon_mcp.attachments import MAX_TOTAL_BYTES, stage_outbox_bytes
 from pigeon_mcp.bearer_auth import TenantBearerVerifier
 from pigeon_mcp.config import http_public_base_url, settings
-from pigeon_mcp.tenants import gate_http, get_store, set_current_tenant
+from pigeon_mcp.tenants import current_tenant, gate_http, get_store, set_current_tenant
 
 VERSION = "0.1.0"
 
@@ -185,6 +189,54 @@ def build_mcp(*, http: bool = False) -> MCPServer:
                     "outbox_root": str(settings.outbox_root.expanduser().resolve()),
                 },
                 status_code=201,
+            )
+
+        @mcp.custom_route("/inbox/fetch/{ticket}", methods=["GET"])
+        async def inbox_fetch(request: Request) -> Response:
+            """Serve one get_attachment result to the seat that pulled it (bearer + ticket).
+
+            Every failure after auth is the same 404 so a wrong tenant learns nothing.
+            """
+            if not _bearer_ok(request):
+                return JSONResponse(
+                    {"error": "invalid_token", "error_description": "Authentication required"},
+                    status_code=401,
+                )
+            tenant = current_tenant()
+            not_found = JSONResponse({"error": "not_found"}, status_code=404)
+            ticket = get_store().consume_download(request.path_params["ticket"], tenant.id)
+            if ticket is None:
+                return not_found
+            # Grant revoked since the pull → the bytes are no longer theirs.
+            if not tenant.allows(ticket["account"]):
+                return not_found
+            root = (settings.download_root.expanduser() / tenant.id).resolve()
+            path = Path(ticket["path"])
+            try:
+                path.relative_to(root)
+                fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
+            except (ValueError, OSError):
+                return not_found
+            with os.fdopen(fd, "rb") as fh:
+                data = fh.read(ticket["size"] + 1)
+            # Swapped or truncated since the pull → refuse rather than serve other bytes.
+            if len(data) != ticket["size"] or hashlib.sha256(data).hexdigest() != ticket["sha256"]:
+                return not_found
+            get_store().audit(
+                tenant_name=tenant.name,
+                tool="inbox_fetch",
+                account=ticket["account"],
+                target_id=ticket["sha256"][:16],
+            )
+            return Response(
+                content=data,
+                media_type="application/octet-stream",
+                headers={
+                    "Content-Disposition": f"attachment; filename*=UTF-8''{quote(path.name)}",
+                    "X-Content-Type-Options": "nosniff",
+                    "Cache-Control": "no-store",
+                    "X-Content-SHA256": ticket["sha256"],
+                },
             )
 
     @mcp.tool()
@@ -381,7 +433,9 @@ def build_mcp(*, http: bool = False) -> MCPServer:
         output_path: str,
     ) -> str:
         """Write an attachment under download_root. output_path may be a bare filename
-        (lands in download_root) or an absolute path under it. Returns path and size."""
+        (lands in download_root) or an absolute path under it. Returns path and size.
+        Over HTTP the file lands in this seat's own folder and the result adds a
+        single-use download_url (GET with the same bearer, expires in 15 minutes)."""
         gate_http("get_attachment", account=account)
         return inbox_mod.format_result(
             await inbox_mod.get_attachment_file(account, message_id, attachment_id, output_path)

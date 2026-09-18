@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from typing import Any
 
 from pigeon_mcp.attachments import resolve_attachments, resolve_download_path
-from pigeon_mcp.config import settings
+from pigeon_mcp.config import http_public_base_url, settings
 from pigeon_mcp.gmail_client import (
     get_attachment_bytes,
     get_message,
@@ -31,6 +32,7 @@ from pigeon_mcp.mime_builder import build_mime
 from pigeon_mcp.mime_parse import extract_html_body, extract_plain_body, list_attachment_parts
 from pigeon_mcp.proof import verify_send_proof
 from pigeon_mcp.session import access_token_for
+from pigeon_mcp.tenants import current_tenant, get_store
 
 
 def format_result(result: Any) -> str:
@@ -171,11 +173,34 @@ async def get_attachment_file(
     attachment_id: str,
     output_path: str,
 ) -> dict[str, Any]:
+    tenant = current_tenant()
+    root = settings.download_root.expanduser()
+    if tenant is not None:
+        # HTTP seats never share a directory: each tenant's pulls live under its own id.
+        root = root / tenant.id
     token = await access_token_for(account)
-    path = resolve_download_path(settings.download_root, output_path)
+    path = resolve_download_path(root, output_path)
     data = await get_attachment_bytes(token, message_id, attachment_id)
     path.write_bytes(data)
-    return {"path": str(path), "size": len(data)}
+    result: dict[str, Any] = {"path": str(path), "size": len(data)}
+    if tenant is None:
+        return result
+    # The file sits on the pigeon host; a remote seat fetches it once over HTTPS.
+    digest = hashlib.sha256(data).hexdigest()
+    secret, expires = get_store().issue_download(
+        tenant_id=tenant.id,
+        account=account,
+        path=str(path),
+        sha256=digest,
+        size=len(data),
+    )
+    result.update(
+        sha256=digest,
+        download_url=f"{http_public_base_url()}/inbox/fetch/{secret}",
+        download_expires_at=expires,
+        download_note="GET once with this seat's bearer; single use. Re-run get_attachment for a new link.",
+    )
+    return result
 
 
 async def labels_list(account: str) -> dict[str, Any]:

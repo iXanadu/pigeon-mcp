@@ -71,6 +71,7 @@ lives on the host, not in this repo. Two rules there matter for the public site:
 
 - **`location = /<page>`** — every marketing page needs one or it 404s. `deploy-static.sh`
   warns when a page has none.
+- **`location /inbox/fetch/`** — remote seats download pulled attachments here. Proxy to the app (same as `/mcp`). Without it, `download_url` from `get_attachment` 404s at the edge.
 - **`location /~/`** — owner passkey dashboard + `/~/api/*`. Proxy to the app (same as `/mcp`). Without it, minting tenant bearers 404s at the edge.
 - **`location = /robots.txt`** — must NOT be the fleet default `Disallow: /`. Social
   unfurlers (Twitterbot, Slack, Discord) honor robots and will not render a card for a

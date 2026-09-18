@@ -39,6 +39,10 @@ if `accounts_list` is empty, ask the owner to grant a mailbox (or to run
 - `send` / `reply` / `forward` / `draft_send` need a unique `idempotency_key`.
 - Attachments: stage the file at `POST /outbox/stage?filename=…` (same bearer),
   then `attachments_json='[{"path": "<path from stage>"}]'`.
+- Inbound attachments: `get_attachment` saves the file on the pigeon host and
+  returns a `download_url`. `GET` it once with the same bearer within 15
+  minutes. It is single-use and works only for the seat that pulled it; call
+  `get_attachment` again for a fresh link. Check the bytes against `sha256`.
 
 ## Connecting a mailbox
 
@@ -57,6 +61,16 @@ surface that; do not invent a second OAuth flow.
   Mint a new one; do not reuse.
 - Empty `accounts_list` after a fresh host is **success**, not a fault — no
   mailbox has consented yet.
+
+## Download an attachment
+
+```bash
+# 1) MCP pull → {"path": ..., "size": N, "sha256": ..., "download_url": ...}
+get_attachment(account=..., message_id=..., attachment_id=..., output_path="exhibit.pdf")
+
+# 2) Fetch once (same bearer); a second GET is 404
+curl -sS -f -o exhibit.pdf -H "Authorization: Bearer $TOKEN" "<download_url>"
+```
 
 ## Send with a file
 
