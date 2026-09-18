@@ -13,7 +13,7 @@ Gmail connector for MCP clients. One server, many Gmail accounts via OAuth refre
 - **Routing headers** — every read exposes `originalTo` (`X-Gm-Original-To`), `deliveredTo`, `replyTo`, `authResults`; `messages_list` sweeps headers without bodies
 - **Send / reply / forward** — server-built MIME, outbox file paths only, 25 MB cap, idempotency keys, proof on success
 - **Read / organise** — search (threads + pagination), get thread/message, labels, archive/trash, drafts
-- **Attachments** — send from configured outbox root (default `~/Outbox`); stage via `POST /outbox/stage` (bearer); download to configured download root (default `~/Inbox`)
+- **Attachments** — send from configured outbox root (default `~/Outbox`); stage via `POST /outbox/stage` (bearer); download to configured download root (default `~/Inbox`); remote seats fetch pulls via a single-use `download_url`; the HTTP server deletes both after 24 h
 - **Dual transport** — stdio for local harnesses; Streamable HTTP behind a gateway for remote clients
 
 ## Requirements
