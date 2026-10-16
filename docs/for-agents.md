@@ -37,6 +37,7 @@ if `accounts_list` is empty, ask the owner to grant a mailbox (or to run
 - Every mail tool takes `account=<the connected mailbox>`.
 - Send as yourself with `from_identity=<your address>`.
 - `send` / `reply` / `forward` / `draft_send` need a unique `idempotency_key`.
+- `forward` sends the original's quoted body and attachments with it, copied server-side. Don't download and re-stage them; pass `include_original_attachments=false` only to drop them.
 - Attachments: stage the file at `POST /outbox/stage?filename=…` (same bearer),
   then `attachments_json='[{"path": "<path from stage>"}]'`.
 - Inbound attachments: `get_attachment` saves the file on the pigeon host and

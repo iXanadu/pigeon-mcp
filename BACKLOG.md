@@ -1,6 +1,6 @@
 # pigeon-mcp backlog
 
-Last updated: 2026-09-18 (download route + 24 h sweep shipped)
+Last updated: 2026-10-16 (forward carries original attachments, issue #2)
 
 Open items only. Host topology and session state live in engram (`startup/next`, `deploy/*`).
 
@@ -13,6 +13,9 @@ Open items only. Host topology and session state live in engram (`startup/next`,
 - [ ] **GitHub dangling objects:** a force-push does not purge old commits from GitHub's object store immediately (reachable by SHA for a while). If that matters, ask GitHub Support to run a GC on the repo; otherwise it ages out.
 
 ### DEGRADING
+- [ ] **SUBJ-1 non-ASCII subject fails send:** a subject with Unicode dashes fails, and the error is not surfaced cleanly (grokbot, inbox/707661a1). Likely `mime_builder.build_mime` sets `root["Subject"]` raw; it needs RFC 2047 encoding and a test. Found 2026-10-14.
+- [ ] **MEM-1 prod leak:** `uvicorn_gmcp_prod` grows ~300 MB/week (admin@webone, inbox/af1f1ce0, which offered a systemd `MemoryMax`). Find the cause before capping. Found 2026-10-14.
+- [ ] **FWD-1 live proof:** forward-with-attachments (8a232bc) passes unit tests but has not run on prod with a real message. On the first real use, check that proof `attachments[]` has a sha256 per original file. Found 2026-10-16.
 - [ ] **PX-1 stdio proxy dies on server restart:** after any prod restart, `scripts/pigeon-mcp-proxy` keeps the old `mcp-session-id` and every tool call returns `404 Session not found` until the harness restarts. Fix: on 404, re-`initialize` and retry once. Seen 2026-09-17 after the `5b24d40` deploy.
 
 ## Parked
@@ -22,6 +25,7 @@ Open items only. Host topology and session state live in engram (`startup/next`,
 
 ## Done recently (do not re-open)
 
+- **Forward carries the original (2026-10-16, deployed `8a232bc`, issue #2):** `forward` used to fetch metadata only and silently drop the original body and attachments. It now quotes the original and copies its attachments server-side; `include_original_attachments` flag; the cap counts both; plain reads list attachments.
 - **24 h file sweep + privacy wording (2026-09-17):** HTTP server deletes outbox + download files older than `PIGEON_MCP_FILE_TTL_HOURS` (24) hourly; never follows symlinks; refuses a root containing tokens/admin db. Privacy policy (site + `docs/legal/`) now states the 24 h retention instead of "not retained".
 - **Inbound attachment download (2026-09-17, deployed `5b24d40`):** `GET /inbox/fetch/<ticket>` — bearer + tenant-bound single-use 15-min ticket, per-tenant download folder, grant re-check, sha256/no-symlink guard, audited. nginx `location ^~ /inbox/fetch/` added (backup `pigeon_c52_prod.bak.20260917210028`). Prod e2e: 401 no bearer, 200 + sha match, 404 on reuse.
 - **History purge (2026-08-29, owner go):** `git filter-repo` replace-text + replace-message over all refs (fleet hostnames, sibling product names, personal name, tailnet label → generic); force-pushed `main` `d58dc96 → fcffdc8`; deleted stale branches `content/your-server-page`, `ops/deploy-kit`; fresh-clone verify = 0 hits; prod re-pointed, reflog expired, gc'd. Pre-purge mirror kept locally outside the repo.
