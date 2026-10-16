@@ -67,6 +67,8 @@ Never rewrite a URL. Never wrap `google.com/url`. Never "linkify." If the caller
 
 `reply` and `forward` take the same attachment list as `send`. Thread with `In-Reply-To` and `References` from the source message. Stay on that thread.
 
+`forward` re-sends the source message: the agent's note and signature, then a `Forwarded message` header block (From, Date, Subject, To, Cc) and the original body, plus every original attachment, copied server-side so no bytes pass through the agent. `include_original_attachments=false` drops them; `attachments_json` adds outbox files on top. The 25 MB cap counts both, and an over-cap forward fails before upload.
+
 From is the connected account. No From spoof.
 
 Signatures: use them. The operator writes them in Gmail settings. Gmail's send API will not apply them for you. At send time, GET that account's send-as record (`users.settings.sendAs`) and append whatever is there now (HTML signature onto the HTML part, plain onto the plain part). Do not keep a copy on disk or in Hand. A stored paste is how a signature change still showed the old one.

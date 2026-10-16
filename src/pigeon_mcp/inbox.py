@@ -76,6 +76,7 @@ def _summarize_message(msg: dict, *, detail: str = "plain") -> dict[str, Any]:
         out["attachments"] = list_attachment_parts(payload)
     elif detail == "plain":
         out["body"] = extract_plain_body(payload)
+        out["attachments"] = list_attachment_parts(payload)
     # detail == "metadata" — headers + snippet only
     return out
 

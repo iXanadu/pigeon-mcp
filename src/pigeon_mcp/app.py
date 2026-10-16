@@ -360,8 +360,13 @@ def build_mcp(*, http: bool = False) -> MCPServer:
         footer: str = "",
         subject: str = "",
         from_identity: str = "",
+        include_original_attachments: bool = True,
     ) -> str:
-        """Forward a message on-thread. Same attachment and proof rules as send."""
+        """Forward a message on-thread with its quoted body and original attachments.
+
+        The original's attachments are copied server-side (no bytes pass through you);
+        set include_original_attachments=false to drop them. attachments_json adds
+        extra outbox files. Same 25 MB cap and proof rules as send."""
         gate_http("forward", account=account, from_identity=from_identity)
         result = await mail_mod.forward(
             account=account,
@@ -374,6 +379,7 @@ def build_mcp(*, http: bool = False) -> MCPServer:
             footer=footer,
             subject=subject,
             from_identity=from_identity,
+            include_original_attachments=include_original_attachments,
         )
         return mail_mod.format_result(result)
 

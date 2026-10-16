@@ -182,6 +182,7 @@ On Linux, run `pigeon-mcp-http` under systemd with the same loopback bind — se
 | `get_thread` / `get_message` | `format=metadata` (headers only), `plain` or `full`; every message carries `originalTo`, `deliveredTo`, `replyTo`, `authResults` |
 | `get_attachment` | Writes under download root; over HTTP, into the seat's own folder plus a single-use `download_url` (bearer, 15 min) |
 | `send` / `reply` / `forward` | Paths only; rejects `content` / base64 in JSON; optional `from_identity` |
+| `forward` | Carries the original body and attachments server-side; `include_original_attachments=false` drops them |
 | `draft_create` / `draft_send` | Same attach/proof rules as send; `draft_create` takes `from_identity` |
 | `labels_list` / `labels_create` | User + system labels |
 | `filters_list` / `filters_create` / `filters_delete` | Gmail filters (server-side routing: `to:` an alias → label + skip inbox) |

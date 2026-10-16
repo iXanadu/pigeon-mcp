@@ -345,3 +345,154 @@ async def test_forward_uses_thread(mail_env, monkeypatch):
     assert result["threadId"] == "thr-forward"
     assert b"thr-forward" in captured.get("body", b"") or captured  # threadId in upload metadata
     assert b"<fwd@id>" in raw_mime
+
+
+def _b64(data: bytes) -> str:
+    return base64.urlsafe_b64encode(data).decode().rstrip("=")
+
+
+def _sent_mime(upload: bytes):
+    from email import message_from_bytes
+    from email import policy as email_policy
+
+    start = upload.index(b"Content-Type: message/rfc822\r\n\r\n") + len(
+        b"Content-Type: message/rfc822\r\n\r\n"
+    )
+    end = upload.rindex(b"\r\n--gmcp_boundary--")
+    return message_from_bytes(upload[start:end], policy=email_policy.default)
+
+
+def _mock_forward_source(payload_parts: list[dict]):
+    respx.get(f"{GMAIL}/users/me/settings/sendAs/sender@example.com").mock(
+        return_value=httpx.Response(200, json={"signature": "<b>Sig</b>"})
+    )
+    respx.get(f"{GMAIL}/users/me/messages/orig-msg").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "id": "orig-msg",
+                "threadId": "thr-forward",
+                "payload": {
+                    "mimeType": "multipart/mixed",
+                    "headers": [
+                        {"name": "Message-ID", "value": "<fwd@id>"},
+                        {"name": "Subject", "value": "Videos"},
+                        {"name": "From", "value": "Murad <other@example.com>"},
+                        {"name": "Date", "value": "Thu, 16 Oct 2026 16:03:00 -0400"},
+                    ],
+                    "parts": payload_parts,
+                },
+            },
+        )
+    )
+
+
+def _mock_forward_send(captured: dict):
+    def _capture_send(request):
+        captured["body"] = request.content
+        return httpx.Response(200, json={"id": "fwd-1", "threadId": "thr-forward"})
+
+    respx.post(f"{GMAIL_UP}/users/me/messages/send").mock(side_effect=_capture_send)
+    respx.get(f"{GMAIL}/users/me/messages/fwd-1").mock(
+        side_effect=lambda request: httpx.Response(
+            200,
+            json={"id": "fwd-1", "threadId": "thr-forward", "payload": {"headers": []}}
+            if request.url.params.get("format") != "raw"
+            else {"raw": _b64(b"Subject: x\r\n\r\n")},
+        )
+    )
+
+
+@respx.mock
+async def test_forward_carries_original_body_and_attachments(mail_env, monkeypatch):
+    monkeypatch.setattr(
+        "pigeon_mcp.mail._idempotency_store",
+        lambda: IdempotencyStore(mail_env["idem_path"]),
+    )
+    big = b"\x00mov" * 5000
+    small = b"tiny"
+    _mock_forward_source(
+        [
+            {"mimeType": "text/plain", "body": {"data": _b64(b"Here are the clips.")}},
+            {
+                "mimeType": "video/quicktime",
+                "filename": "a.mov",
+                "body": {"attachmentId": "att-a", "size": len(big)},
+            },
+            {"mimeType": "text/plain", "filename": "note.txt", "body": {"data": _b64(small)}},
+        ]
+    )
+    respx.get(f"{GMAIL}/users/me/messages/orig-msg/attachments/att-a").mock(
+        return_value=httpx.Response(200, json={"data": _b64(big)})
+    )
+    captured: dict = {}
+    _mock_forward_send(captured)
+
+    await forward(
+        account="sender@example.com",
+        message_id="orig-msg",
+        to="new@example.com",
+        idempotency_key="fwd-att",
+        body="FYI",
+    )
+
+    msg = _sent_mime(captured["body"])
+    assert msg["Subject"] == "Fwd: Videos"
+    files = {p.get_filename(): p.get_payload(decode=True) for p in msg.iter_attachments()}
+    assert files == {"a.mov": big, "note.txt": small}
+    assert msg.get_body(("plain",)) is not None
+    plain = msg.get_body(("plain",)).get_content()
+    assert plain.index("FYI") < plain.index("Sig") < plain.index("Forwarded message")
+    assert "From: Murad <other@example.com>" in plain
+    assert "Here are the clips." in plain
+    html = msg.get_body(("html",)).get_content()
+    assert "Murad &lt;other@example.com&gt;" in html
+
+
+@respx.mock
+async def test_forward_can_drop_original_attachments(mail_env, monkeypatch):
+    monkeypatch.setattr(
+        "pigeon_mcp.mail._idempotency_store",
+        lambda: IdempotencyStore(mail_env["idem_path"]),
+    )
+    _mock_forward_source(
+        [
+            {"mimeType": "text/plain", "body": {"data": _b64(b"body")}},
+            {"mimeType": "video/quicktime", "filename": "a.mov", "body": {"attachmentId": "x"}},
+        ]
+    )
+    captured: dict = {}
+    _mock_forward_send(captured)
+
+    await forward(
+        account="sender@example.com",
+        message_id="orig-msg",
+        to="new@example.com",
+        idempotency_key="fwd-drop",
+        include_original_attachments=False,
+    )
+
+    msg = _sent_mime(captured["body"])
+    assert list(msg.iter_attachments()) == []
+    assert "body" in msg.get_body(("plain",)).get_content()
+
+
+@respx.mock
+async def test_forward_over_cap_refuses_before_send(mail_env, monkeypatch):
+    monkeypatch.setattr("pigeon_mcp.mail.MAX_TOTAL_BYTES", 10)
+    _mock_forward_source(
+        [{"mimeType": "video/quicktime", "filename": "a.mov", "body": {"attachmentId": "att-a"}}]
+    )
+    respx.get(f"{GMAIL}/users/me/messages/orig-msg/attachments/att-a").mock(
+        return_value=httpx.Response(200, json={"data": _b64(b"x" * 11)})
+    )
+    send_route = respx.post(f"{GMAIL_UP}/users/me/messages/send")
+
+    with pytest.raises(ValueError, match="Gmail cap"):
+        await forward(
+            account="sender@example.com",
+            message_id="orig-msg",
+            to="new@example.com",
+            idempotency_key="fwd-big",
+        )
+    assert not send_route.called
