@@ -1,0 +1,107 @@
+# gmail-mcp (gmcp.c52.com) — NOT YET INSTALLED. Ready for cutover day.
+#
+# Named uvicorn_gmcp_prod for fleet consistency (uvicorn_chat_c52_prod,
+# uvicorn_share_c52_prod) even though the ExecStart is the package's own
+# console script rather than uvicorn directly — the app owns its server
+# startup; the unit name describes the ROLE, which is what an operator greps.
+#
+# Install: copy to /etc/systemd/system/, daemon-reload, enable --now.
+
+[Unit]
+Description=gmail-mcp MCP server (gmcp.c52.com)
+After=network-online.target
+Wants=network-online.target
+# Deliberately widened but BOUNDED: a transient fault self-heals, a genuine
+# crashloop still lands in 'failed' where webone_units_failed can page.
+# See shared engram lesson/watchdog-restart-overlap-destroys-nrestarts.
+StartLimitIntervalSec=300
+StartLimitBurst=10
+
+# ⚠️ RENAME 2026-08-27: the project became pigeon-mcp and the settings env
+# prefix changed GMAIL_MCP_ -> PIGEON_MCP_. Every Environment= line below is
+# prefix-sensitive: with the OLD prefix the app starts perfectly and IGNORES all
+# of it, falling back to defaults — bind 127.0.0.1:8879, outbox ~/Outbox. It
+# would look healthy and be wrong. If you ever see it listening on the wrong
+# port, check the prefix before anything else.
+[Service]
+# Config lives in prod/.env (non-secret) and prod/.keys (secrets), both 0640
+# gmcp_user. This unit sets ONLY the bind — see the source-of-truth note in .env.
+# Do not re-add keys here that .env owns: process env beats dotenv, so the unit
+# would silently win and edits to .env would appear to do nothing.
+Type=simple
+User=gmcp_user
+# Group MUST be gmcp_user, not www-data. FleetVault runs as ixanadu and is in
+# gmcp_user (not www-data); with Group=www-data the OAuth token files this
+# service writes are unreadable to the vault, and vault-backup ABORTS the whole
+# run on the first unreadable file — silently taking every other secret on the
+# box out of backup with it. Verified: same failure shape as share's .keys
+# earlier today.
+Group=gmcp_user
+WorkingDirectory=/var/www/gmcp.c52.com/prod
+Environment=PATH=/usr/local/pyenv/versions/3.12.0/envs/gmail-mcp-3.12/bin:/usr/local/bin:/usr/bin:/bin
+
+# Bind LOOPBACK ONLY. nginx is the sole public edge; the app must never be
+# reachable directly. Set explicitly here rather than relying on .env loading,
+# so the bind cannot silently change if config resolution shifts.
+# Bind 127.0.0.2, NOT 127.0.0.1 — deliberate, and it is not a style choice.
+# The MCP SDK auto-enables DNS-rebinding protection with allowed_hosts limited
+# to 127.0.0.1/localhost/::1 whenever the bind host is literally one of those
+# AND the app passes no transport_security (mcpserver/server.py:1145). Behind a
+# reverse proxy every request arrives with Host: pigeon.c52.com, which is not in
+# that list, so the SDK answers 421 Misdirected Request — while the identical
+# request to the loopback bind returns 200. Looks like a broken proxy; is not.
+# 127.0.0.2 is still loopback (127.0.0.0/8), still unreachable off-box, and does
+# not trip the SDK's literal check. Host validation is done at the edge instead:
+# nginx routes only server_name pigeon.c52.com to this backend.
+# PROPER FIX IS UPSTREAM: the app should pass transport_security with
+# allowed_hosts derived from PIGEON_MCP_HTTP_PUBLIC_URL. Reported to the devs.
+Environment=PIGEON_MCP_HTTP_HOST=127.0.0.2
+Environment=PIGEON_MCP_HTTP_PORT=8022
+
+# PUBLIC ORIGIN — required, and its absence is not obvious.
+# The MCP SDK applies DNS-rebinding protection: it validates the incoming Host
+# header against the server's known public origin. http_public_base_url() falls
+# back to http://<bind-host>:<port> when nothing is set, so every request
+# arriving with Host: pigeon.c52.com was answered 421 Misdirected Request while
+# the same request to 127.0.0.1:8022 returned 200. Symptom looks like a broken
+# proxy; cause is entirely inside the app.
+# Must match the redirect URI registered in the Google Cloud Console CHARACTER
+# FOR CHARACTER, or consent fails with redirect_uri_mismatch.
+# Token dir MUST sit inside a FleetVault-swept root (/opt/srv, /var/www,
+# /home/ixanadu/.config) AND the files must be named gmail-token-*.json, or the
+# Google refresh tokens are never backed up. Both conditions are required.
+
+# Attachment dirs. Owner's call (2026-08-27): /tmp, not /var/lib — these are
+# transient staging files, and /var/lib is for state that must survive. Agreed
+# on the semantics. THREE THINGS MAKE /tmp SAFE HERE, all required:
+#
+#  1. NOT bare /tmp. /tmp is 1777 — every user and service on this box can list
+#     it, and these are the owner's email attachments. Dedicated subdirs, 0700,
+#     owned by gmcp_user. See gmcp-tmpfiles.conf next to this file.
+#  2. tmpfiles.d on this box carries `D /tmp ... 30d`, which ages contents out
+#     AND wipes /tmp at boot. The dirs must therefore be RECREATED by tmpfiles
+#     at boot with the right owner/mode, or the service starts with no outbox.
+#  3. PrivateTmp MUST STAY OFF for this unit. With PrivateTmp the service gets a
+#     namespaced /tmp, so a file staged by any other means is invisible to it and
+#     the failure reads as "the MCP can't find my file" with nothing in any log.
+#
+# It also keeps them outside the FleetVault ROOTS (/opt/srv:/var/www:
+# ~/.config), which is what started this — the vault classifies by FILENAME, so
+# a user emailing credentials.json from a swept dir would have it encrypted and
+# committed into the maintenance repo.
+# PrivateTmp is left at its default (off); site-ctl only accepts an explicit PrivateTmp=yes, which would break the outbox above.
+
+ExecStart=/usr/local/pyenv/versions/3.12.0/envs/gmail-mcp-3.12/bin/pigeon-mcp-http
+
+# Required by site-ctl unit-apply (PRIV-1): the service can never gain privileges.
+NoNewPrivileges=yes
+Restart=always
+RestartSec=5
+TimeoutStopSec=20
+KillSignal=SIGTERM
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=uvicorn_gmcp_prod
+
+[Install]
+WantedBy=multi-user.target
